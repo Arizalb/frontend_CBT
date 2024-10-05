@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getExamById } from "../services/examService";
+import Swal from "sweetalert2";
 import {
   Box,
   Heading,
@@ -14,30 +14,27 @@ import {
   Button,
   useToast,
   Spinner,
-  useColorMode,
-  useColorModeValue,
   Center,
 } from "@chakra-ui/react";
+import { getExamById } from "../services/examService";
 import { submitResult } from "../services/resultServices";
 
 function ExamDetails() {
   const { id } = useParams();
   const [exam, setExam] = useState(null);
-  const [examId, setExamId] = useState(null); // Inisialisasi state untuk examId
+  const [examId, setExamId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [answers, setAnswers] = useState({}); // Inisialisasi state untuk jawaban
+  const [answers, setAnswers] = useState({});
   const toast = useToast();
 
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const response = await getExamById(id); // Ambil detail ujian
-
-        // Perbaikan: langsung gunakan response, tidak perlu memeriksa response.exam
+        const response = await getExamById(id);
         if (response) {
-          setExam(response); // Simpan detail ujian langsung dari response
-          setExamId(response._id); // Simpan examId langsung dari response
+          setExam(response);
+          setExamId(response._id);
         } else {
           throw new Error("Exam data not found");
         }
@@ -50,6 +47,80 @@ function ExamDetails() {
     };
 
     fetchExam();
+
+    // Handle copy attempt
+    const handleCopyAttempt = (e) => {
+      e.preventDefault();
+      Swal.fire({
+        icon: "error",
+        title: "Copy Dilarang!",
+        text: "Anda tidak diperbolehkan menyalin teks selama ujian.",
+        confirmButtonText: "Oke",
+      });
+      navigator.clipboard.writeText(""); // Kosongkan clipboard
+    };
+
+    // Blokir selection agar tidak bisa menyalin teks melalui selection
+    document.body.style.userSelect = "none";
+
+    // Handle PrintScreen
+    const handlePrintScreen = (e) => {
+      if (e.key === "PrintScreen") {
+        Swal.fire({
+          icon: "warning",
+          title: "Screenshot Dilarang!",
+          text: "Anda tidak diperbolehkan mengambil screenshot selama ujian.",
+          confirmButtonText: "Mengerti",
+        });
+        navigator.clipboard.writeText(""); // Kosongkan clipboard
+      }
+    };
+
+    // Handle right-click
+    const handleRightClick = (e) => {
+      e.preventDefault();
+      Swal.fire({
+        icon: "error",
+        title: "Klik Kanan Dilarang!",
+        text: "Anda tidak diperbolehkan menggunakan klik kanan selama ujian.",
+        confirmButtonText: "Oke",
+      });
+    };
+
+    // Handle key combinations for copy/paste
+    const handleKeyCombination = (e) => {
+      if (
+        e.ctrlKey &&
+        (e.key === "c" ||
+          e.key === "v" ||
+          e.key === "x" ||
+          e.key === "s" ||
+          e.key === "p")
+      ) {
+        e.preventDefault();
+        Swal.fire({
+          icon: "error",
+          title: "Aksi Dilarang!",
+          text: "Fungsi ini dinonaktifkan selama ujian.",
+          confirmButtonText: "Oke",
+        });
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener("keydown", handlePrintScreen);
+    document.addEventListener("keydown", handleKeyCombination);
+    document.addEventListener("copy", handleCopyAttempt);
+    document.addEventListener("contextmenu", handleRightClick);
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.userSelect = "auto"; // Kembalikan user-select normal
+      document.removeEventListener("keydown", handlePrintScreen);
+      document.removeEventListener("keydown", handleKeyCombination);
+      document.removeEventListener("copy", handleCopyAttempt);
+      document.removeEventListener("contextmenu", handleRightClick);
+    };
   }, [id]);
 
   const handleAnswerChange = (questionId, value, type) => {
@@ -66,19 +137,18 @@ function ExamDetails() {
 
   const handleSubmit = async () => {
     try {
-      const studentId = localStorage.getItem("studentId"); // Ambil ID siswa dari localStorage
+      const studentId = localStorage.getItem("studentId");
       const payload = {
         examId,
         studentId,
-        answers: Object.values(answers), // Ubah objek jawaban menjadi array
+        answers: Object.values(answers),
       };
 
-      // Pastikan `examId` tidak null atau undefined
       if (!examId) {
         throw new Error("Exam ID is missing");
       }
 
-      await submitResult(examId, payload); // Kirim hasil ujian dengan examId
+      await submitResult(examId, payload);
       toast({ title: "Jawaban terkirim!", status: "success" });
     } catch (error) {
       console.error("Error submitting exam results:", error);
@@ -116,13 +186,7 @@ function ExamDetails() {
 
       <VStack spacing={6} align="stretch">
         {exam.questions.map((question, index) => (
-          <Box
-            key={question._id}
-            p={4}
-            borderWidth="1px"
-            borderRadius="md"
-            bg={useColorModeValue("gray.300", "gray.700")}
-          >
+          <Box key={question._id} p={4} borderWidth="1px" borderRadius="md">
             <Text mb={4}>
               <strong>{index + 1}.</strong> {question.questionText}
             </Text>

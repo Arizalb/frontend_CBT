@@ -1,9 +1,19 @@
-import { Box, Flex, Text, Link, Icon, HStack, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Text,
+  Link,
+  Icon,
+  HStack,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { FaFacebook, FaTwitter, FaInstagram, FaGithub } from "react-icons/fa";
 
 const Footer = () => {
+  const bg = useColorModeValue("gray.800", "gray.700");
   return (
-    <Box bg="gray.800" color="gray.300" py={10} px={4}>
+    <Box bg={bg} color="gray.300" py={10} px={4}>
       <VStack spacing={4}>
         <Text fontSize="sm" fontWeight="bold">
           RZL Baihaqi CBT App
@@ -31,15 +41,7 @@ const Footer = () => {
               _hover={{ color: "blue.400" }}
             />
           </Link>
-          <Link href="https://twitter.com" isExternal>
-            <Icon
-              as={FaTwitter}
-              w={6}
-              h={6}
-              transition="0.2s"
-              _hover={{ color: "blue.300" }}
-            />
-          </Link>
+
           <Link href="https://instagram.com/rzlbaihaqi" isExternal>
             <Icon
               as={FaInstagram}
@@ -47,6 +49,15 @@ const Footer = () => {
               h={6}
               transition="0.2s"
               _hover={{ color: "pink.400" }}
+            />
+          </Link>
+          <Link href="https://twitter.com" isExternal>
+            <Icon
+              as={FaTwitter}
+              w={6}
+              h={6}
+              transition="0.2s"
+              _hover={{ color: "blue.300" }}
             />
           </Link>
         </HStack>

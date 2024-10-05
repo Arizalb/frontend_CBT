@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon, HamburgerIcon } from "@chakra-ui/icons";
 import { useEffect, useState, useRef } from "react";
@@ -116,13 +117,10 @@ function Navbar() {
       </Text>
     </>
   );
-
+  const bg = useColorModeValue("gray.800", "gray.700");
+  const color = useColorModeValue("white", "white");
   return (
-    <Box
-      bg={colorMode === "light" ? "gray.100" : "gray.800"}
-      p={4}
-      color={colorMode === "light" ? "black" : "white"}
-    >
+    <Box bg={bg} p={4} color={color}>
       <Flex
         maxW="1200px"
         mx="auto"
