@@ -67,7 +67,7 @@ const Footer = () => {
           Contribute on GitHub
         </Text>
         <Link
-          href="https://github.com"
+          href="https://github.com/Arizalb"
           isExternal
           color="white"
           fontWeight="medium"
