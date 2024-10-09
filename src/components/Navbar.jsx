@@ -70,11 +70,9 @@ function Navbar() {
         Home
       </Text>
       {role === "admin" && (
-        <>
-          <Text as={Link} to="/manage" _hover={{ color: "teal.500" }} mr={4}>
-            Manage
-          </Text>
-        </>
+        <Text as={Link} to="/manage" _hover={{ color: "teal.500" }} mr={4}>
+          Manage
+        </Text>
       )}
       {role === "examiner" && (
         <>
@@ -111,14 +109,15 @@ function Navbar() {
           </Text>
         </>
       )}
-      {/* Add profile link */}
       <Text as={Link} to="/profile" _hover={{ color: "teal.500" }} mr={4}>
         Profile
       </Text>
     </>
   );
+
   const bg = useColorModeValue("gray.800", "gray.700");
   const color = useColorModeValue("white", "white");
+
   return (
     <Box bg={bg} p={4} color={color}>
       <Flex
@@ -139,13 +138,12 @@ function Navbar() {
           spacing={4}
           flex="1"
         >
-          {isAuthenticated && menuLinks}
+          {isAuthenticated ? menuLinks : null}
         </HStack>
 
-        {/* Spacer for spacing between the middle and right side */}
-        <Spacer display={{ base: "none", md: "flex" }} />
+        <Spacer />
 
-        {/* Dark mode & logout buttons */}
+        {/* Desktop Login/Register & Dark Mode */}
         <HStack spacing={4} display={{ base: "none", md: "flex" }}>
           <IconButton
             aria-label="Toggle Dark Mode"
@@ -153,10 +151,19 @@ function Navbar() {
             onClick={toggleColorMode}
             colorScheme="teal"
           />
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <Button colorScheme="red" onClick={onLogoutOpen}>
               Logout
             </Button>
+          ) : (
+            <>
+              <Button as={Link} to="/login" colorScheme="teal">
+                Login
+              </Button>
+              <Button as={Link} to="/register" colorScheme="teal">
+                Register
+              </Button>
+            </>
           )}
         </HStack>
 
@@ -169,13 +176,7 @@ function Navbar() {
             colorScheme="teal"
             mr={2}
           />
-          {isAuthenticated && (
-            <Button colorScheme="red" onClick={onLogoutOpen}>
-              Logout
-            </Button>
-          )}
           <IconButton
-            display={{ base: "block", md: "none" }}
             icon={<HamburgerIcon />}
             onClick={onOpen}
             aria-label="Open Menu"

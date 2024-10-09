@@ -53,47 +53,52 @@ function Register() {
   const textColor = useColorModeValue("black", "white");
 
   return (
-    <Box
-      p={6}
-      maxW="400px"
-      mx="auto"
-      mt={12}
-      bg={bgColor}
-      color={textColor}
-      borderRadius="md"
-      minH={"100vh"}
-    >
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <FormControl isInvalid={errors.name} mb={4}>
-          <FormLabel>Nama</FormLabel>
-          <Input type="text" {...register("name")} bg={inputBgColor} />
-          <FormErrorMessage>
-            {errors.name && errors.name.message}
-          </FormErrorMessage>
-        </FormControl>
+    <Box minH={"100vh"}>
+      <Box
+        p={6}
+        maxW="400px"
+        mx="auto"
+        my={12}
+        bg={bgColor}
+        color={textColor}
+        borderRadius="md"
+      >
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <FormControl isInvalid={errors.name} mb={4}>
+            <FormLabel>Nama</FormLabel>
+            <Input type="text" {...register("name")} bg={inputBgColor} />
+            <FormErrorMessage>
+              {errors.name && errors.name.message}
+            </FormErrorMessage>
+          </FormControl>
 
-        <FormControl isInvalid={errors.email} mb={4}>
-          <FormLabel>Email</FormLabel>
-          <Input type="email" {...register("email")} bg={inputBgColor} />
-          <FormErrorMessage>
-            {errors.email && errors.email.message}
-          </FormErrorMessage>
-        </FormControl>
+          <FormControl isInvalid={errors.email} mb={4}>
+            <FormLabel>Email</FormLabel>
+            <Input type="email" {...register("email")} bg={inputBgColor} />
+            <FormErrorMessage>
+              {errors.email && errors.email.message}
+            </FormErrorMessage>
+          </FormControl>
 
-        <FormControl isInvalid={errors.password} mb={4}>
-          <FormLabel>Password</FormLabel>
-          <Input type="password" {...register("password")} bg={inputBgColor} />
-          <FormErrorMessage>
-            {errors.password && errors.password.message}
-          </FormErrorMessage>
-        </FormControl>
+          <FormControl isInvalid={errors.password} mb={4}>
+            <FormLabel>Password</FormLabel>
+            <Input
+              type="password"
+              {...register("password")}
+              bg={inputBgColor}
+            />
+            <FormErrorMessage>
+              {errors.password && errors.password.message}
+            </FormErrorMessage>
+          </FormControl>
 
-        {/* Removed role selection since it's now fixed */}
+          {/* Removed role selection since it's now fixed */}
 
-        <Button colorScheme="teal" type="submit" width="full">
-          Register
-        </Button>
-      </form>
+          <Button colorScheme="teal" type="submit" width="full">
+            Register
+          </Button>
+        </form>
+      </Box>
     </Box>
   );
 }
