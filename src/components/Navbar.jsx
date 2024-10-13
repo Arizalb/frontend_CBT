@@ -24,9 +24,11 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useColorModeValue,
+  Image, // Import Image
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon, HamburgerIcon } from "@chakra-ui/icons";
 import { useEffect, useState, useRef } from "react";
+import logo from "../utils/logo.png"; // Import logo
 
 function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -127,9 +129,13 @@ function Navbar() {
         justifyContent="space-between"
       >
         {/* Brand / Logo */}
-        <Heading as="h1" size="lg">
-          CBT App
-        </Heading>
+        <HStack>
+          <Image src={logo} alt="OnTest Logo" boxSize="40px" mr={2} />{" "}
+          {/* Logo */}
+          <Heading as="h1" size="lg">
+            OnTest {/* Ganti dari CBT App */}
+          </Heading>
+        </HStack>
 
         {/* Desktop Menu */}
         <HStack

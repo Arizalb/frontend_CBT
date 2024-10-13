@@ -8,7 +8,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import hero_cbt from "../utils/hero_cbt.png"; // Import hero image from utils
+import hero_cbt from "../utils/ontest_logo.png"; // Import hero image from utils
 
 function Dashboard() {
   // Menggunakan useColorModeValue untuk mendukung dark mode
@@ -17,6 +17,12 @@ function Dashboard() {
   const textColor = useColorModeValue("gray.600", "gray.300");
   const buttonBg = useColorModeValue("gray.200", "gray.700");
   const buttonHoverBg = useColorModeValue("gray.300", "gray.600");
+
+  // Gaya tambahan untuk gambar di mode malam dengan white glow menggunakan drop-shadow
+  const whiteGlow = useColorModeValue(
+    "none", // Tidak ada glow di mode terang
+    "drop-shadow(3px 0 3px rgba(255, 255, 255, 0.8))" // White glow yang mengikuti sisi gambar di mode malam
+  );
 
   return (
     <Box minH={"100vh"}>
@@ -45,7 +51,7 @@ function Dashboard() {
               fontSize={{ base: "2xl", md: "4xl" }}
               color={headingColor}
             >
-              Welcome to the CBT Dashboard
+              Welcome to the CBT OnTest Dashboard
             </Heading>
             <Text fontSize={{ base: "md", md: "lg" }} color={textColor} mb={6}>
               Manage your exams, track your results, or update your profile.
@@ -75,7 +81,7 @@ function Dashboard() {
               boxSize={{ base: "300px", md: "500px" }}
               objectFit="cover"
               borderRadius="lg"
-              shadow="lg"
+              filter={whiteGlow} // Drop-shadow yang mengikuti sisi gambar
             />
           </Box>
         </Flex>
