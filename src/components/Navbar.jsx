@@ -40,6 +40,7 @@ function Navbar() {
     onOpen: onLogoutOpen,
     onClose: onLogoutClose,
   } = useDisclosure();
+
   const cancelRef = useRef();
   const navigate = useNavigate();
 
@@ -130,10 +131,9 @@ function Navbar() {
       >
         {/* Brand / Logo */}
         <HStack>
-          <Image src={logo} alt="OnTest Logo" boxSize="40px" mr={2} />{" "}
-          {/* Logo */}
+          <Image src={logo} alt="OnTest Logo" boxSize="40px" mr={2} />
           <Heading as="h1" size="lg">
-            OnTest {/* Ganti dari CBT App */}
+            OnTest
           </Heading>
         </HStack>
 
@@ -199,7 +199,13 @@ function Navbar() {
             <DrawerBody>
               <VStack spacing={4} align={"left"}>
                 {isAuthenticated ? (
-                  menuLinks
+                  <>
+                    {menuLinks}
+                    {/* Tombol Logout di Mobile Drawer */}
+                    <Button colorScheme="red" onClick={onLogoutOpen} w="full">
+                      Logout
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button as={Link} to="/login" colorScheme="teal" w="full">
