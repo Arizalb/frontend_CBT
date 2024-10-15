@@ -121,23 +121,54 @@ export const getResultsByExam = async (examId) => {
   return response.data;
 };
 
-export const gradeEssayAnswers = async (resultId, grades) => {
+export const gradeEssayAnswers = async (resultId, { questionIndex, grade }) => {
   try {
     const token = localStorage.getItem("token");
+
+    // Log untuk debugging
+    console.log("Result ID:", resultId);
+    console.log(`Grading question index: ${questionIndex}, grade: ${grade}`);
+
+    // Format payload sesuai dengan API
+    const formattedGrade = {
+      questionIndex: Number(questionIndex), // Pastikan index adalah angka
+      grade: Number(grade), // Pastikan grade juga berupa angka
+    };
+
     const response = await axios.put(
       `${API_URL}/grade/${resultId}`,
-      { grades },
+      formattedGrade, // Mengirim payload untuk satu questionIndex
       {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       }
     );
+
     return response.data;
   } catch (error) {
-    // Handle the error here
     console.error("An error occurred:", error.message);
-    // You can also throw a custom error or return an error message
-    throw new Error("Failed to grade essay answers. Please try again later.");
+    throw new Error("Failed to grade essay answer. Please try again later.");
+  }
+};
+
+export const finalizeGrades = async (resultId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await axios.post(
+      `${API_URL}/grade/${resultId}/finalize`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error finalizing grades:", error.message);
+    throw new Error("Failed to finalize grades. Please try again later.");
   }
 };

@@ -16,7 +16,7 @@ const Footer = () => {
     <Box bg={bg} color="gray.300" py={10} px={4}>
       <VStack spacing={4}>
         <Text fontSize="sm" fontWeight="bold">
-          RZL Baihaqi CBT App
+          OnTest - CBT App
         </Text>
 
         {/* Informasi Kontak */}
@@ -29,7 +29,7 @@ const Footer = () => {
 
         {/* Tautan Sosial */}
         <Text fontSize="sm" fontWeight="bold" mt={4}>
-          Follow Us
+          Follow Me
         </Text>
         <HStack spacing={6}>
           <Link href="https://facebook.com" isExternal>

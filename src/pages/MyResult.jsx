@@ -15,11 +15,11 @@ import { CheckCircleIcon } from "@chakra-ui/icons";
 import { getCompletedExams } from "../services/resultServices"; // Import fungsi getCompletedExams
 
 function MyResults() {
-  const [completedExams, setCompletedExams] = useState([]); // Ini hanya untuk ID ujian
-  const [examNames, setExamNames] = useState([]); // Ini untuk nama ujian
+  const [completedExams, setCompletedExams] = useState([]); // Untuk menyimpan ID ujian
+  const [examDetails, setExamDetails] = useState([]); // Untuk menyimpan detail ujian (nama dan score)
   const [loading, setLoading] = useState(true);
 
-  // Call all necessary hooks at the top level
+  // Mengambil ID ujian yang sudah diselesaikan
   useEffect(() => {
     const fetchCompletedExams = async () => {
       try {
@@ -31,17 +31,18 @@ function MyResults() {
     };
 
     fetchCompletedExams();
-  }, []); // Hooks hanya untuk mengambil ID ujian yang sudah diselesaikan
+  }, []);
 
+  // Mengambil detail ujian berdasarkan ID ujian
   useEffect(() => {
-    if (completedExams.length > 0) {
-      const fetchExamNames = async () => {
+    const fetchExamDetails = async () => {
+      if (completedExams.length > 0) {
         try {
-          const names = await Promise.all(
+          const details = await Promise.all(
             completedExams.map(async (examId) => {
               const token = localStorage.getItem("token"); // Ambil token dari local storage
               if (!token) {
-                return "Exam Name Not Found"; // Jika token tidak ada, tampilkan pesan default
+                return { title: "Exam Name Not Found", score: "N/A" }; // Jika token tidak ada
               }
 
               const headers = {
@@ -49,35 +50,49 @@ function MyResults() {
               };
 
               try {
-                const { data } = await axios.get(
-                  `https://backend-cbt.vercel.app/api/exams/${examId}`, // Gunakan examId untuk fetch nama ujian
+                // Ambil hasil ujian terlebih dahulu
+                const resultResponse = await axios.get(
+                  `https://backend-cbt.vercel.app/api/results/student/${examId}`, // Endpoint untuk mengambil hasil
                   { headers }
                 );
 
-                return data.title; // Kembalikan nama ujian
+                const resultData = resultResponse.data;
+
+                // Ambil nama ujian
+                const examResponse = await axios.get(
+                  `https://backend-cbt.vercel.app/api/exams/${examId}`,
+                  { headers }
+                );
+
+                const examData = examResponse.data;
+
+                return {
+                  title: examData.title,
+                  score: resultData.totalMarksObtained || "N/A", // Ambil totalMarksObtained dari hasil
+                };
               } catch (error) {
                 if (error.response && error.response.status === 404) {
-                  return "Exam sudah dihapus"; // Pesan jika exam sudah dihapus
+                  return { title: "Exam sudah dihapus", score: "N/A" };
                 } else {
-                  return "Exam Name Not Found";
+                  return { title: "Exam Name Not Found", score: "N/A" };
                 }
               }
             })
           );
 
-          setExamNames(names); // Simpan nama ujian ke dalam state
+          setExamDetails(details); // Simpan detail ujian ke dalam state
         } catch (error) {
-          console.error("Error fetching exam names:", error);
+          console.error("Error fetching exam details:", error);
         } finally {
-          setLoading(false); // Selesai loading setelah fetch nama ujian
+          setLoading(false); // Selesai loading setelah fetch detail ujian
         }
-      };
+      }
+    };
 
-      fetchExamNames();
-    }
-  }, [completedExams]); // Hook ini akan dijalankan setelah mendapatkan ID ujian
+    fetchExamDetails();
+  }, [completedExams]);
 
-  // Render based on loading state
+  // Render berdasarkan state loading
   if (loading) {
     return (
       <Center h="100vh">
@@ -103,9 +118,9 @@ function MyResults() {
         My Completed Exams
       </Heading>
       <Flex direction="column" spacing={3}>
-        {completedExams.map((examId, index) => (
+        {examDetails.map((examDetail, index) => (
           <ChakraBox
-            key={examId}
+            key={index}
             p={4}
             borderWidth="1px"
             borderRadius="md"
@@ -114,13 +129,19 @@ function MyResults() {
             mb={3}
             display="flex"
             alignItems="center"
+            justifyContent="space-between"
           >
-            <Icon
-              as={CheckCircleIcon}
-              color={useColorModeValue("green.500", "green.200")}
-              mr={2}
-            />
-            <Text fontWeight="bold">{examNames[index] || "Loading..."}</Text>
+            <Flex alignItems="center">
+              <Icon
+                as={CheckCircleIcon}
+                color={useColorModeValue("green.500", "green.200")}
+                mr={2}
+              />
+              <Text fontWeight="bold">{examDetail.title}</Text>
+            </Flex>
+            <Text fontWeight="bold" ml={4}>
+              Score: {examDetail.score}
+            </Text>
           </ChakraBox>
         ))}
       </Flex>

@@ -8,15 +8,20 @@ import {
   Input,
   Button,
 } from "@chakra-ui/react";
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons"; // Icons for correct/incorrect
-import { getResults, gradeEssayAnswers } from "../services/resultServices"; // Include grading service
+import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import {
+  getResults,
+  gradeEssayAnswers,
+  finalizeGrades,
+} from "../services/resultServices";
 import { getExamById } from "../services/examService";
 import { getUserById } from "../services/userService";
+import Swal from "sweetalert2";
 
 const ResultsList = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [essayGrades, setEssayGrades] = useState({}); // To store essay grades temporarily
+  const [essayGrades, setEssayGrades] = useState({}); // Untuk menyimpan nilai esai
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -33,7 +38,7 @@ const ResultsList = () => {
                 ...result,
                 examName: exam.title,
                 studentName: student.name,
-                questions: exam.questions, // Attach exam questions
+                questions: exam.questions,
               };
             } catch (error) {
               console.error(
@@ -60,16 +65,11 @@ const ResultsList = () => {
   }, []);
 
   const checkAnswer = (selectedAnswer, correctAnswer, options) => {
-    if (selectedAnswer === correctAnswer) {
-      return true;
-    }
-
     const correctIndex = ["A", "B", "C", "D"].indexOf(correctAnswer);
-    if (correctIndex !== -1 && options[correctIndex] === selectedAnswer) {
-      return true;
-    }
-
-    return false;
+    return (
+      selectedAnswer === correctAnswer ||
+      options[correctIndex] === selectedAnswer
+    );
   };
 
   const handleGradeChange = (resultId, questionIndex, grade) => {
@@ -82,12 +82,32 @@ const ResultsList = () => {
   const handleGradeSubmit = async (resultId, questionIndex) => {
     const grade = essayGrades[`${resultId}-${questionIndex}`];
 
+    if (!grade) return Swal.fire("Error", "Please enter a grade", "error");
+
     try {
-      await gradeEssayAnswers(resultId, questionIndex, grade); // Call API to submit grade
-      alert("Essay graded successfully!");
+      await gradeEssayAnswers(resultId, {
+        questionIndex: questionIndex,
+        grade: Number(grade),
+      });
+
+      Swal.fire("Success", "Essay graded successfully!", "success");
     } catch (error) {
       console.error("Error grading essay:", error);
-      alert("Failed to submit the grade.");
+      Swal.fire("Error", "Failed to submit the grade.", "error");
+    }
+  };
+
+  const handleFinalize = async (resultId) => {
+    try {
+      await finalizeGrades(resultId);
+      Swal.fire(
+        "Success",
+        "Finalization complete! Grades are now locked.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error finalizing grades:", error);
+      Swal.fire("Error", "Failed to finalize grades.", "error");
     }
   };
 
@@ -95,7 +115,7 @@ const ResultsList = () => {
     return (
       <Box textAlign="center" mt={6}>
         <Spinner size="lg" />
-        <Text mt={2}>Loading Results...</Text>
+        <Text mt={2}>Memuat Hasil...</Text>
       </Box>
     );
   }
@@ -119,60 +139,81 @@ const ResultsList = () => {
           </Text>
           <Divider my={3} />
 
-          {result.answers &&
-            result.answers.map((answer, index) => {
-              const question = result.questions
-                ? result.questions[index]
-                : null;
+          {/* Tampilkan hasil dan nilai jika sudah difinalisasi */}
+          {result.isChecked ? (
+            <Text fontWeight="bold" color="green.500">
+              Total Nilai: {result.totalMarksObtained}
+            </Text>
+          ) : (
+            // Tampilkan form penilaian jika belum difinalisasi
+            <>
+              {result.answers &&
+                result.answers.map((answer, index) => {
+                  const question = result.questions
+                    ? result.questions[index]
+                    : null;
 
-              if (!question) return null;
+                  if (!question) return null;
 
-              return (
-                <Box key={index} mb={2}>
-                  <Text>
-                    Question {index + 1}: {question.questionText}
-                  </Text>
+                  return (
+                    <Box key={index} mb={2}>
+                      <Text>
+                        Question {index + 1}: {question.questionText}
+                      </Text>
 
-                  {/* For multiple-choice questions */}
-                  {question.type === "multiple_choice" ? (
-                    <Text>
-                      Selected Answer: {answer.selectedAnswer}{" "}
-                      {checkAnswer(
-                        answer.selectedAnswer,
-                        question.correctAnswer,
-                        question.options
-                      ) ? (
-                        <CheckIcon color="green.500" />
+                      {question.type === "multiple_choice" ? (
+                        <Text>
+                          Selected Answer: {answer.selectedAnswer}{" "}
+                          {checkAnswer(
+                            answer.selectedAnswer,
+                            question.correctAnswer,
+                            question.options
+                          ) ? (
+                            <CheckIcon color="green.500" />
+                          ) : (
+                            <CloseIcon color="red.500" />
+                          )}
+                        </Text>
                       ) : (
-                        <CloseIcon color="red.500" />
-                      )}
-                    </Text>
-                  ) : (
-                    // For essay questions
-                    <Box>
-                      <Text>Essay Answer: {answer.essayAnswer}</Text>
+                        <Box>
+                          <Text>Essay Answer: {answer.essayAnswer}</Text>
 
-                      {/* Input for grading essay */}
-                      <Input
-                        type="number"
-                        placeholder="Enter grade"
-                        value={essayGrades[`${result._id}-${index}`] || ""}
-                        onChange={(e) =>
-                          handleGradeChange(result._id, index, e.target.value)
-                        }
-                        mb={2}
-                      />
-                      <Button
-                        onClick={() => handleGradeSubmit(result._id, index)}
-                        colorScheme="blue"
-                      >
-                        Submit Grade
-                      </Button>
+                          <Input
+                            type="number"
+                            placeholder="Masukkan nilai"
+                            value={essayGrades[`${result._id}-${index}`] || ""}
+                            onChange={(e) =>
+                              handleGradeChange(
+                                result._id,
+                                index,
+                                e.target.value
+                              )
+                            }
+                            mb={2}
+                          />
+                          <Button
+                            onClick={() => handleGradeSubmit(result._id, index)}
+                            colorScheme="blue"
+                            isDisabled={!essayGrades[`${result._id}-${index}`]}
+                          >
+                            Submit Nilai
+                          </Button>
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </Box>
-              );
-            })}
+                  );
+                })}
+
+              {/* Tombol finalisasi nilai */}
+              <Button
+                onClick={() => handleFinalize(result._id)}
+                colorScheme="green"
+                mt={4}
+              >
+                Finalisasi Nilai
+              </Button>
+            </>
+          )}
         </Box>
       ))}
     </VStack>
