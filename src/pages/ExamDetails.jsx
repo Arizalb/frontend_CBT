@@ -148,6 +148,29 @@ function ExamDetails() {
         throw new Error("Exam ID is missing");
       }
 
+      // Validasi: pastikan semua pertanyaan sudah dijawab
+      const unansweredQuestions = exam.questions.filter((question) => {
+        const answer = answers[question._id];
+        if (question.type === "multiple_choice") {
+          return !answer || !answer.selectedAnswer; // Cek jika jawaban multiple choice kosong
+        }
+        if (question.type === "essay") {
+          return !answer || !answer.essayAnswer; // Cek jika jawaban esai kosong
+        }
+        return false;
+      });
+
+      if (unansweredQuestions.length > 0) {
+        Swal.fire({
+          icon: "warning",
+          title: "Jawaban Belum Lengkap",
+          text: "Anda harus menjawab semua pertanyaan sebelum mengirim.",
+          confirmButtonText: "Oke",
+        });
+        return; // Batalkan pengiriman jika ada pertanyaan yang belum dijawab
+      }
+
+      // Jika semua pertanyaan sudah dijawab, kirim jawaban
       await submitResult(examId, payload);
       toast({ title: "Jawaban terkirim!", status: "success" });
     } catch (error) {
