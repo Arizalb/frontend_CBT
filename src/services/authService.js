@@ -51,4 +51,7 @@ export const updateUserProfile = async (profileData) => {
 // Logout user
 export const logout = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("name");
+  localStorage.removeItem("studentId");
 };

@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Heading,
@@ -8,21 +9,37 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import hero_cbt from "../utils/ontest_logo.png"; // Import hero image from utils
+import hero_cbt from "../utils/ontest_logo.png"; // Import hero image
+import Statistics from "../components/Statistics"; // Import Statistics component
+import { getUserProfile } from "../services/authService"; // Import getUserProfile
 
 function Dashboard() {
-  // Menggunakan useColorModeValue untuk mendukung dark mode
+  const [userRole, setUserRole] = useState(null); // Store user role here
+
   const bg = useColorModeValue("gray.50", "gray.800");
   const headingColor = useColorModeValue("teal.600", "teal.300");
   const textColor = useColorModeValue("gray.600", "gray.300");
   const buttonBg = useColorModeValue("gray.200", "gray.700");
   const buttonHoverBg = useColorModeValue("gray.300", "gray.600");
 
-  // Gaya tambahan untuk gambar di mode malam dengan white glow menggunakan drop-shadow
   const whiteGlow = useColorModeValue(
-    "none", // Tidak ada glow di mode terang
-    "drop-shadow(3px 0 3px rgba(255, 255, 255, 0.8))" // White glow yang mengikuti sisi gambar di mode malam
+    "none",
+    "drop-shadow(3px 0 3px rgba(255, 255, 255, 0.8))"
   );
+
+  // Fetch user profile and role from getUserProfile
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        const profile = await getUserProfile(); // Fetch user profile
+        setUserRole(profile.role); // Assuming profile contains a 'role' field
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+      }
+    }
+
+    fetchUserProfile();
+  }, []);
 
   return (
     <Box minH={"100vh"}>
@@ -30,7 +47,7 @@ function Dashboard() {
         p={6}
         maxW="1200px"
         mx="auto"
-        mt={12}
+        my={12}
         bg={bg}
         borderRadius="lg"
         shadow="md"
@@ -40,7 +57,6 @@ function Dashboard() {
           align="center"
           justify="space-between"
         >
-          {/* Left Side: Text and Buttons */}
           <Box
             maxW="600px"
             textAlign={{ base: "center", md: "left" }}
@@ -57,7 +73,6 @@ function Dashboard() {
               Manage your exams, track your results, or update your profile.
               Everything you need in one place.
             </Text>
-            {/* Hanya tombol View Profile */}
             <Button
               as={Link}
               to="/profile"
@@ -72,8 +87,6 @@ function Dashboard() {
               Explore more features through the navigation menu above.
             </Text>
           </Box>
-
-          {/* Right Side: Hero Image */}
           <Box>
             <Image
               src={hero_cbt}
@@ -81,10 +94,13 @@ function Dashboard() {
               boxSize={{ base: "300px", md: "500px" }}
               objectFit="cover"
               borderRadius="lg"
-              filter={whiteGlow} // Drop-shadow yang mengikuti sisi gambar
+              filter={whiteGlow}
             />
           </Box>
         </Flex>
+
+        {/* Conditionally render Statistics only for admin */}
+        {userRole === "admin" && <Statistics />}
       </Box>
     </Box>
   );

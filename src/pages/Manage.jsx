@@ -9,6 +9,7 @@ import {
 } from "@chakra-ui/react";
 import ManageUsers from "../components/ManageUsers";
 import ManageExams from "../components/ManageExams";
+import Statistics from "../components/Statistics";
 
 const Manage = () => {
   return (
@@ -16,6 +17,7 @@ const Manage = () => {
       <Heading as="h2" size="xl" mb={6} textAlign="center">
         Admin Management
       </Heading>
+      <Statistics />
       <Tabs isFitted variant="enclosed" colorScheme="teal">
         <TabList mb="1em">
           <Tab>Manage Users</Tab>
