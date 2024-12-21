@@ -12,10 +12,13 @@ import {
   VStack,
   Box,
   Heading,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
 import { getAllUsers, deleteUser } from "../services/userService";
+import AddUser from "./AddUser";
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -59,6 +62,14 @@ const ManageUsers = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
+  }
+
   return (
     <Box p={6} maxW="1000px" mx="auto" mt={12}>
       <Heading as="h2" mb={6}>
@@ -97,6 +108,7 @@ const ManageUsers = () => {
           </Table>
         </TableContainer>
       </VStack>
+      <AddUser />
     </Box>
   );
 };

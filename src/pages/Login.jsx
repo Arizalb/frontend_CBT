@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { get, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { loginUser } from "../services/authService";
@@ -12,6 +12,7 @@ import {
   FormErrorMessage,
   useColorModeValue,
 } from "@chakra-ui/react";
+import Swal from "sweetalert2";
 
 const schema = yup.object().shape({
   email: yup.string().email("Email tidak valid").required("Email wajib diisi"),
@@ -36,11 +37,21 @@ function Login() {
       const response = await loginUser(data);
 
       if (response.success) {
-        console.log("Login berhasil, role:", localStorage.getItem("role"));
-        console.log("Login berhasil, name:", localStorage.getItem("name"));
         navigate("/"); // Redirect ke home setelah login berhasil
+        Swal.fire({
+          icon: "success",
+          title: "Login Berhasil!",
+          text: "Selamat datang, " + localStorage.getItem("name"),
+          confirmButtonText: "Oke",
+        });
       } else {
         console.error("Login gagal:", response.message);
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Login!",
+          text: "Periksa email dan password Anda!",
+          confirmButtonText: "Oke",
+        });
       }
     } catch (error) {
       console.error("Login gagal:", error);

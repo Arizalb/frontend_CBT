@@ -11,7 +11,6 @@ export const getAllUsers = async () => {
       headers: { Authorization: `Bearer ${token}` },
     };
     const response = await axios.get(API_URL, config);
-    console.log(response.data); // Log response untuk melihat datanya
     return response.data;
   } catch (error) {
     console.error("Error fetching users:", error); // Log error jika terjadi masalah
