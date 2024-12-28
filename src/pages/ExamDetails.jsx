@@ -26,6 +26,7 @@ function ExamDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [originalQuestionsOrder, setOriginalQuestionsOrder] = useState([]);
   const toast = useToast();
 
   // Fungsi untuk mengacak array
@@ -39,6 +40,9 @@ function ExamDetails() {
         const response = await getExamById(id);
         if (response) {
           const { questions } = response;
+
+          // simpan urutan asli pertanyaan
+          setOriginalQuestionsOrder(questions.map((q) => q._id));
 
           // Pisahkan soal berdasarkan tipe
           const multipleChoiceQuestions = questions.filter(
@@ -163,10 +167,13 @@ function ExamDetails() {
   const handleSubmit = async () => {
     try {
       const studentId = localStorage.getItem("studentId");
+      const reorderedAnswers = originalQuestionsOrder.map((id) => {
+        return answers[id];
+      });
       const payload = {
         examId,
         studentId,
-        answers: Object.values(answers),
+        answers: reorderedAnswers,
       };
 
       if (!examId) {
