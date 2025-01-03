@@ -149,14 +149,14 @@ const ResultsList = () => {
             <>
               {result.answers &&
                 result.answers.map((answer, index) => {
-                  const question = result.questions
-                    ? result.questions[index]
-                    : null;
+                  const question = result.questions.find(
+                    (q) => q._id === answer.questionId
+                  );
 
                   if (!question) return null;
 
                   return (
-                    <Box key={index} mb={2}>
+                    <Box key={question._id} mb={2}>
                       <Text>
                         Question {index + 1}: {question.questionText}
                       </Text>
@@ -181,7 +181,9 @@ const ResultsList = () => {
                           <Input
                             type="number"
                             placeholder="Masukkan nilai"
-                            value={essayGrades[`${result._id}-${index}`] || ""}
+                            value={
+                              essayGrades[`${result._id}-${question._id}`] || ""
+                            }
                             onChange={(e) =>
                               handleGradeChange(
                                 result._id,
@@ -192,9 +194,13 @@ const ResultsList = () => {
                             mb={2}
                           />
                           <Button
-                            onClick={() => handleGradeSubmit(result._id, index)}
+                            onClick={() =>
+                              handleGradeSubmit(result._id, question._id)
+                            }
                             colorScheme="blue"
-                            isDisabled={!essayGrades[`${result._id}-${index}`]}
+                            isDisabled={
+                              !essayGrades[`${result._id}-${question._id}`]
+                            }
                           >
                             Submit Nilai
                           </Button>
