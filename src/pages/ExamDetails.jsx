@@ -26,43 +26,14 @@ function ExamDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [originalQuestionsOrder, setOriginalQuestionsOrder] = useState([]);
   const toast = useToast();
-
-  // Fungsi untuk mengacak array
-  const shuffleArray = (array) => {
-    return array.sort(() => Math.random() - 0.5);
-  };
 
   useEffect(() => {
     const fetchExam = async () => {
       try {
         const response = await getExamById(id);
         if (response) {
-          const { questions } = response;
-
-          // simpan urutan asli pertanyaan
-          setOriginalQuestionsOrder(questions.map((q) => q._id));
-
-          // Pisahkan soal berdasarkan tipe
-          const multipleChoiceQuestions = questions.filter(
-            (question) => question.type === "multiple_choice"
-          );
-          const essayQuestions = questions.filter(
-            (question) => question.type === "essay"
-          );
-
-          // Acak soal multiple choice
-          const shuffledMultipleChoice = shuffleArray(multipleChoiceQuestions);
-
-          // Gabungkan soal multiple choice dan essay
-          const sortedQuestions = [
-            ...shuffledMultipleChoice,
-            ...essayQuestions,
-          ];
-
-          // Set ulang exam dengan soal yang diurutkan
-          setExam({ ...response, questions: sortedQuestions });
+          setExam(response);
           setExamId(response._id);
         } else {
           throw new Error("Exam data not found");
@@ -167,13 +138,10 @@ function ExamDetails() {
   const handleSubmit = async () => {
     try {
       const studentId = localStorage.getItem("studentId");
-      const reorderedAnswers = originalQuestionsOrder.map((id) => {
-        return answers[id];
-      });
       const payload = {
         examId,
         studentId,
-        answers: reorderedAnswers,
+        answers: Object.values(answers),
       };
 
       if (!examId) {
