@@ -20,16 +20,17 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  IconButton,
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
+import { DownloadIcon } from "lucide-react";
+import Swal from "sweetalert2";
 
 function Exams() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedExam, setSelectedExam] = useState(null);
   const [token, setToken] = useState("");
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isModalOpen, setIsModalOpen] = useState(false); // Gunakan state manual untuk modal
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -44,9 +45,38 @@ function Exams() {
     fetchExams();
   }, []);
 
+  const handleDownload = (exam) => {
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Anda akan mengunduh file kisi-kisi-informatika-fase-e.pdf",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, unduh!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const link = document.createElement("a");
+        link.href = "/kisi-kisi-informatika-fase-e.pdf";
+        link.download = "kisi-kisi-informatika-fase-e.pdf";
+        link.click();
+        Swal.fire(
+          "Terunduh!",
+          "File kisi-kisi-informatika-fase-e.pdf telah diunduh.",
+          "success"
+        );
+      }
+    });
+  };
+
   const handleOpenModal = (exam) => {
     setSelectedExam(exam);
-    onOpen();
+    setIsModalOpen(true); // Atur modal terbuka
+  };
+
+  const handleCloseModal = () => {
+    setSelectedExam(null);
+    setIsModalOpen(false); // Atur modal tertutup
   };
 
   const handleSubmit = () => {
@@ -74,6 +104,7 @@ function Exams() {
 
       {/* List of exams */}
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+        {" "}
         {exams.map((exam) => (
           <Box
             key={exam._id}
@@ -83,38 +114,54 @@ function Exams() {
             borderRadius="lg"
             bg={useColorModeValue("white", "gray.700")}
           >
+            {" "}
             <Stack spacing={4}>
+              {" "}
               <Heading
                 as="h3"
                 size="md"
                 color={useColorModeValue("orange.400", "yellow.400")}
               >
+                {" "}
                 <Button
                   onClick={() => handleOpenModal(exam)}
                   variant="link"
                   colorScheme="teal"
                 >
-                  {exam.title}
-                </Button>
-              </Heading>
+                  {" "}
+                  {exam.title}{" "}
+                </Button>{" "}
+              </Heading>{" "}
               <Flex justifyContent="space-between" alignItems="center">
+                {" "}
                 <Text fontSize="sm">
-                  Total Marks: <strong>{exam.totalMarks}</strong>
-                </Text>
+                  {" "}
+                  Total Marks: <strong>{exam.totalMarks}</strong>{" "}
+                </Text>{" "}
                 <Badge colorScheme={exam.isActive ? "green" : "red"}>
-                  {exam.isActive ? "Aktif" : "Non-Aktif"}
-                </Badge>
-              </Flex>
+                  {" "}
+                  {exam.isActive ? "Aktif" : "Non-Aktif"}{" "}
+                </Badge>{" "}
+                <IconButton
+                  icon={<DownloadIcon />}
+                  onClick={() => handleDownload(exam)}
+                  colorScheme="teal"
+                  aria-label="Unduh"
+                />{" "}
+              </Flex>{" "}
               <Text fontSize="sm" color="gray.500">
-                Tanggal Ujian: {new Date(exam.examDate).toLocaleDateString()}
-              </Text>
-            </Stack>
+                {" "}
+                Tanggal Ujian: {new Date(
+                  exam.examDate
+                ).toLocaleDateString()}{" "}
+              </Text>{" "}
+            </Stack>{" "}
           </Box>
-        ))}
+        ))}{" "}
       </SimpleGrid>
 
       {/* Modal for entering token */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Masukkan Token Ujian</ModalHeader>
@@ -130,7 +177,7 @@ function Exams() {
             <Button colorScheme="teal" onClick={handleSubmit}>
               Masuk
             </Button>
-            <Button onClick={onClose} ml={3}>
+            <Button onClick={handleCloseModal} ml={3}>
               Batal
             </Button>
           </ModalFooter>

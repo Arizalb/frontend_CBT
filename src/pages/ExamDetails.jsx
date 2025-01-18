@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
   Box,
@@ -15,6 +15,7 @@ import {
   useToast,
   Spinner,
   Center,
+  Flex,
 } from "@chakra-ui/react";
 import { getExamById } from "../services/examService";
 import { submitResult } from "../services/resultServices";
@@ -26,7 +27,9 @@ function ExamDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const toast = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchExam = async () => {
@@ -135,6 +138,18 @@ function ExamDetails() {
     }));
   };
 
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < exam.questions.length - 1) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex - 1);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       const studentId = localStorage.getItem("studentId");
@@ -152,10 +167,10 @@ function ExamDetails() {
       const unansweredQuestions = exam.questions.filter((question) => {
         const answer = answers[question._id];
         if (question.type === "multiple_choice") {
-          return !answer || !answer.selectedAnswer; // Cek jika jawaban multiple choice kosong
+          return !answer || !answer.selectedAnswer;
         }
         if (question.type === "essay") {
-          return !answer || !answer.essayAnswer; // Cek jika jawaban esai kosong
+          return !answer || !answer.essayAnswer;
         }
         return false;
       });
@@ -167,12 +182,12 @@ function ExamDetails() {
           text: "Anda harus menjawab semua pertanyaan sebelum mengirim.",
           confirmButtonText: "Oke",
         });
-        return; // Batalkan pengiriman jika ada pertanyaan yang belum dijawab
+        return;
       }
 
-      // Jika semua pertanyaan sudah dijawab, kirim jawaban
       await submitResult(examId, payload);
       toast({ title: "Jawaban terkirim!", status: "success" });
+      navigate("/my-results");
     } catch (error) {
       console.error("Error submitting exam results:", error);
       toast({
@@ -198,59 +213,73 @@ function ExamDetails() {
     );
   }
 
+  const currentQuestion = exam.questions[currentQuestionIndex];
+
   return (
     <Box p={6} maxW="800px" mx="auto" mt={12}>
       <Heading mb={4}>{exam.title}</Heading>
       <Text mb={4}>{exam.description}</Text>
       <Divider mb={4} />
-      <Heading size="md" mb={4}>
-        Pertanyaan
-      </Heading>
 
-      <VStack spacing={6} align="stretch">
-        {exam.questions.map((question, index) => (
-          <Box key={question._id} p={4} borderWidth="1px" borderRadius="md">
-            <Text mb={4}>
-              <strong>{index + 1}.</strong> {question.questionText}
-            </Text>
+      <Box p={4} borderWidth="1px" borderRadius="md">
+        <Text mb={4}>
+          <strong>{currentQuestionIndex + 1}.</strong>{" "}
+          {currentQuestion.questionText}
+        </Text>
 
-            {question.type === "multiple_choice" && (
-              <RadioGroup
-                onChange={(value) =>
-                  handleAnswerChange(question._id, value, question.type)
-                }
-                value={answers[question._id]?.selectedAnswer || ""}
-              >
-                <Stack spacing={3} direction="column">
-                  {question.options.map((option, idx) => (
-                    <Radio key={idx} value={option}>
-                      {option}
-                    </Radio>
-                  ))}
-                </Stack>
-              </RadioGroup>
-            )}
+        {currentQuestion.type === "multiple_choice" && (
+          <RadioGroup
+            onChange={(value) =>
+              handleAnswerChange(
+                currentQuestion._id,
+                value,
+                currentQuestion.type
+              )
+            }
+            value={answers[currentQuestion._id]?.selectedAnswer || ""}
+          >
+            <Stack spacing={3} direction="column">
+              {currentQuestion.options.map((option, idx) => (
+                <Radio key={idx} value={option}>
+                  {option}
+                </Radio>
+              ))}
+            </Stack>
+          </RadioGroup>
+        )}
 
-            {question.type === "essay" && (
-              <Textarea
-                placeholder="Tulis jawaban esai Anda..."
-                value={answers[question._id]?.essayAnswer || ""}
-                onChange={(e) =>
-                  handleAnswerChange(
-                    question._id,
-                    e.target.value,
-                    question.type
-                  )
-                }
-              />
-            )}
-          </Box>
-        ))}
-      </VStack>
+        {currentQuestion.type === "essay" && (
+          <Textarea
+            placeholder="Tulis jawaban esai Anda..."
+            value={answers[currentQuestion._id]?.essayAnswer || ""}
+            onChange={(e) =>
+              handleAnswerChange(
+                currentQuestion._id,
+                e.target.value,
+                currentQuestion.type
+              )
+            }
+          />
+        )}
+      </Box>
 
-      <Button colorScheme="teal" mt={6} onClick={handleSubmit}>
-        Kirim Jawaban
-      </Button>
+      <Flex justifyContent="space-between" mt={6}>
+        <Button
+          onClick={handlePreviousQuestion}
+          isDisabled={currentQuestionIndex === 0}
+        >
+          Sebelumnya
+        </Button>
+        {currentQuestionIndex === exam.questions.length - 1 ? (
+          <Button colorScheme="teal" onClick={handleSubmit}>
+            Kirim Jawaban
+          </Button>
+        ) : (
+          <Button colorScheme="teal" onClick={handleNextQuestion}>
+            Berikutnya
+          </Button>
+        )}
+      </Flex>
     </Box>
   );
 }
