@@ -57,7 +57,7 @@ function Exams() {
     }).then((result) => {
       if (result.isConfirmed) {
         const link = document.createElement("a");
-        link.href = "/kisi-kisi-informatika-fase-e.pdf";
+        link.href = "/kisi-kisi/kisi-kisi-informatika-fase-e.pdf";
         link.download = "kisi-kisi-informatika-fase-e.pdf";
         link.click();
         Swal.fire(
