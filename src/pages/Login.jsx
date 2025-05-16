@@ -1,0 +1,138 @@
+import { useState } from "react"; // Tambahkan useState
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { loginUser } from "../services/authService";
+import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Button,
+  Input,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+  useColorModeValue,
+  Spinner,
+  Heading,
+  Text,
+  Link,
+} from "@chakra-ui/react";
+import Swal from "sweetalert2";
+
+const schema = yup.object().shape({
+  email: yup.string().email("Email tidak valid").required("Email wajib diisi"),
+  password: yup
+    .string()
+    .min(6, "Password minimal 6 karakter")
+    .required("Password wajib diisi"),
+});
+
+function Login() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false); // State untuk loading
+
+  const onSubmit = async (data) => {
+    setLoading(true); // Aktifkan loading
+
+    try {
+      const response = await loginUser(data);
+
+      if (response.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Login Berhasil!",
+          text: "Selamat datang, " + localStorage.getItem("name"),
+          confirmButtonText: "Oke",
+        }).then(() => {
+          navigate("/"); // Redirect setelah Swal ditutup
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Login!",
+          text: "Periksa email dan password Anda!",
+          confirmButtonText: "Oke",
+        });
+      }
+    } catch (error) {
+      console.error("Login gagal:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Login!",
+        text: error.response.data.message,
+        confirmButtonText: "Oke",
+      });
+    } finally {
+      setLoading(false); // Matikan loading setelah proses selesai
+    }
+  };
+
+  const bgColor = useColorModeValue("gray.100", "gray.900");
+  const inputBgColor = useColorModeValue("white", "gray.700");
+  const textColor = useColorModeValue("black", "white");
+
+  return (
+    <Box minH={"100vh"}>
+      <Box
+        p={6}
+        maxW="400px"
+        mx="auto"
+        mt={12}
+        bg={bgColor}
+        color={textColor}
+        borderRadius="md"
+        boxShadow="lg"
+      >
+        <Heading as="h2" size="lg" mb={6}>
+          Login
+        </Heading>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <FormControl isInvalid={errors.email} mb={4}>
+            <FormLabel>Email</FormLabel>
+            <Input type="email" {...register("email")} bg={inputBgColor} />
+            <FormErrorMessage>
+              {errors.email && errors.email.message}
+            </FormErrorMessage>
+          </FormControl>
+
+          <FormControl isInvalid={errors.password} mb={6}>
+            <FormLabel>Password</FormLabel>
+            <Input
+              type="password"
+              {...register("password")}
+              bg={inputBgColor}
+            />
+            <FormErrorMessage>
+              {errors.password && errors.password.message}
+            </FormErrorMessage>
+          </FormControl>
+
+          <Button
+            colorScheme="teal"
+            type="submit"
+            width="full"
+            isDisabled={loading} // Nonaktifkan tombol saat loading
+          >
+            {loading ? <Spinner size="sm" /> : "Login"}{" "}
+            {/* Spinner saat loading */}
+          </Button>
+        </form>
+        <Text mt={4} textAlign="center">
+          Belum punya akun?{" "}
+          <Link color="teal.500" onClick={() => navigate("/register")}>
+            Registrasi
+          </Link>
+        </Text>
+      </Box>
+    </Box>
+  );
+}
+
+export default Login;
