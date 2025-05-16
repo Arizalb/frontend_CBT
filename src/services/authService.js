@@ -16,7 +16,6 @@ export const loginUser = async (data) => {
     if (response.data.token) {
       // Simpan token, role, dan name di localStorage
       localStorage.setItem("token", response.data.token);
-<<<<<<< HEAD
       localStorage.setItem("role", response.data.role);
       localStorage.setItem("name", response.data.name);
       localStorage.setItem("studentId", response.data._id);
@@ -24,12 +23,6 @@ export const loginUser = async (data) => {
       // 🔥 Trigger event agar Navbar langsung update
       window.dispatchEvent(new Event("storage"));
 
-=======
-      localStorage.setItem("role", response.data.role); // Simpan role
-      localStorage.setItem("name", response.data.name); // Simpan nama pengguna
-      localStorage.setItem("studentId", response.data._id);
-
->>>>>>> 21ad59143b0bee86c15ba39af2432a18e75688b6
       return { success: true, message: "Login successful" };
     } else {
       return {
