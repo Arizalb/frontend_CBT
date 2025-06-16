@@ -5,7 +5,6 @@ import { getUserById } from "./userService";
 const API_URL = import.meta.env.VITE_API_URL + "/results";
 
 // getResults.js
-// getResults.js
 export const getResults = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -48,6 +47,14 @@ export const getResults = async () => {
     console.error("Gagal mendapatkan hasil ujian", error);
     return []; // Kembalikan array kosong jika ada error
   }
+};
+
+export const getResultById = async (resultId) => {
+  const token = localStorage.getItem("token");
+  const response = await axios.get(`${API_URL}/${resultId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };
 
 export const getResultByStudent = async (examId) => {

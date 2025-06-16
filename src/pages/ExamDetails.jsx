@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -16,22 +16,61 @@ import {
   Spinner,
   Center,
   Flex,
+  Badge,
+  Progress,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { getExamById } from "../services/examService";
 import { submitResult } from "../services/resultServices";
+import { UNSAFE_NavigationContext as NavigationContext } from "react-router-dom";
+import { useContext } from "react";
+
+// Custom hook untuk blokir navigasi
+function useConfirmExit(when, message) {
+  const { navigator } = useContext(NavigationContext);
+
+  useEffect(() => {
+    if (!when) return;
+
+    const push = navigator.push;
+    navigator.push = (...args) => {
+      if (window.confirm(message)) {
+        push.apply(navigator, args);
+      }
+    };
+
+    return () => {
+      navigator.push = push;
+    };
+  }, [when, message, navigator]);
+}
 
 function ExamDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [exam, setExam] = useState(null);
   const [examId, setExamId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const toast = useToast();
-  const navigate = useNavigate();
+
+  // Hanya aktif jika belum submit
+  useConfirmExit(
+    !isSubmitted,
+    "Apakah Anda yakin ingin keluar dari halaman ujian? Jawaban Anda mungkin tidak tersimpan."
+  );
 
   useEffect(() => {
+    // Cek akses
+    const allowedExamId = sessionStorage.getItem("examAccess");
+    if (allowedExamId !== id) {
+      navigate("/exams", { replace: true });
+      return;
+    }
+
     const fetchExam = async () => {
       try {
         const response = await getExamById(id);
@@ -42,7 +81,6 @@ function ExamDetails() {
           throw new Error("Exam data not found");
         }
       } catch (error) {
-        console.error("Error fetching exam details:", error);
         setError("Gagal mengambil detail ujian. Silakan coba lagi.");
       } finally {
         setLoading(false);
@@ -51,7 +89,7 @@ function ExamDetails() {
 
     fetchExam();
 
-    // Handle copy attempt
+    // Proteksi ujian
     const handleCopyAttempt = (e) => {
       e.preventDefault();
       Swal.fire({
@@ -60,13 +98,9 @@ function ExamDetails() {
         text: "Anda tidak diperbolehkan menyalin teks selama ujian.",
         confirmButtonText: "Oke",
       });
-      navigator.clipboard.writeText(""); // Kosongkan clipboard
+      navigator.clipboard.writeText("");
     };
-
-    // Blokir selection agar tidak bisa menyalin teks melalui selection
     document.body.style.userSelect = "none";
-
-    // Handle PrintScreen
     const handlePrintScreen = (e) => {
       if (e.key === "PrintScreen") {
         Swal.fire({
@@ -75,11 +109,9 @@ function ExamDetails() {
           text: "Anda tidak diperbolehkan mengambil screenshot selama ujian.",
           confirmButtonText: "Mengerti",
         });
-        navigator.clipboard.writeText(""); // Kosongkan clipboard
+        navigator.clipboard.writeText("");
       }
     };
-
-    // Handle right-click
     const handleRightClick = (e) => {
       e.preventDefault();
       Swal.fire({
@@ -89,8 +121,6 @@ function ExamDetails() {
         confirmButtonText: "Oke",
       });
     };
-
-    // Handle key combinations for copy/paste
     const handleKeyCombination = (e) => {
       if (
         e.ctrlKey &&
@@ -109,22 +139,29 @@ function ExamDetails() {
         });
       }
     };
-
-    // Add event listeners
     document.addEventListener("keydown", handlePrintScreen);
     document.addEventListener("keydown", handleKeyCombination);
     document.addEventListener("copy", handleCopyAttempt);
     document.addEventListener("contextmenu", handleRightClick);
 
-    // Cleanup on unmount
+    // Konfirmasi sebelum keluar/refresh/tab close
+    const handleBeforeUnload = (e) => {
+      if (!isSubmitted) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
-      document.body.style.userSelect = "auto"; // Kembalikan user-select normal
+      document.body.style.userSelect = "auto";
       document.removeEventListener("keydown", handlePrintScreen);
       document.removeEventListener("keydown", handleKeyCombination);
       document.removeEventListener("copy", handleCopyAttempt);
       document.removeEventListener("contextmenu", handleRightClick);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [id]);
+  }, [id, navigate, isSubmitted]);
 
   const handleAnswerChange = (questionId, value, type) => {
     setAnswers((prevAnswers) => ({
@@ -186,16 +223,21 @@ function ExamDetails() {
       }
 
       await submitResult(examId, payload);
+      setIsSubmitted(true);
       toast({ title: "Jawaban terkirim!", status: "success" });
       navigate("/my-results");
     } catch (error) {
-      console.error("Error submitting exam results:", error);
       toast({
         title: "Gagal mengirim jawaban / Anda sudah submit",
         status: "error",
       });
     }
   };
+
+  // UI
+  const cardBg = useColorModeValue("white", "gray.700");
+  const cardBorder = useColorModeValue("teal.100", "teal.700");
+  const accent = useColorModeValue("teal.500", "teal.300");
 
   if (loading) {
     return (
@@ -216,16 +258,48 @@ function ExamDetails() {
   const currentQuestion = exam.questions[currentQuestionIndex];
 
   return (
-    <Box p={6} maxW="800px" mx="auto" mt={12}>
-      <Heading mb={4}>{exam.title}</Heading>
-      <Text mb={4}>{exam.description}</Text>
-      <Divider mb={4} />
+    <Box p={6} maxW="700px" mx="auto" mt={12} minH={"100vh"}>
+      <VStack spacing={2} align="start" mb={4}>
+        <Badge
+          colorScheme="teal"
+          fontSize="1em"
+          px={3}
+          py={1}
+          borderRadius="full"
+        >
+          Ujian Online
+        </Badge>
+        <Heading fontSize={{ base: "2xl", md: "3xl" }} color={accent}>
+          {exam.title}
+        </Heading>
+        <Text color="gray.500">{exam.description}</Text>
+      </VStack>
+      <Progress
+        value={((currentQuestionIndex + 1) / exam.questions.length) * 100}
+        colorScheme="teal"
+        size="sm"
+        borderRadius="md"
+        mb={6}
+      />
 
-      <Box p={4} borderWidth="1px" borderRadius="md">
-        <Text mb={4}>
-          <strong>{currentQuestionIndex + 1}.</strong>{" "}
-          {currentQuestion.questionText}
-        </Text>
+      <Box
+        p={6}
+        borderWidth="2px"
+        borderRadius="xl"
+        borderColor={cardBorder}
+        bg={cardBg}
+        shadow="md"
+        mb={4}
+        transition="all 0.2s"
+      >
+        <Flex align="center" mb={4}>
+          <Badge colorScheme="purple" borderRadius="full" px={3} py={1} mr={3}>
+            Soal {currentQuestionIndex + 1} / {exam.questions.length}
+          </Badge>
+          <Text fontWeight="bold" fontSize="lg">
+            {currentQuestion.questionText}
+          </Text>
+        </Flex>
 
         {currentQuestion.type === "multiple_choice" && (
           <RadioGroup
@@ -240,7 +314,13 @@ function ExamDetails() {
           >
             <Stack spacing={3} direction="column">
               {currentQuestion.options.map((option, idx) => (
-                <Radio key={idx} value={option}>
+                <Radio
+                  key={idx}
+                  value={option}
+                  colorScheme="teal"
+                  borderColor={accent}
+                  fontWeight="medium"
+                >
                   {option}
                 </Radio>
               ))}
@@ -259,6 +339,9 @@ function ExamDetails() {
                 currentQuestion.type
               )
             }
+            bg={useColorModeValue("gray.50", "gray.800")}
+            borderColor={accent}
+            mt={2}
           />
         )}
       </Box>
@@ -267,15 +350,21 @@ function ExamDetails() {
         <Button
           onClick={handlePreviousQuestion}
           isDisabled={currentQuestionIndex === 0}
+          variant="outline"
+          colorScheme="teal"
         >
           Sebelumnya
         </Button>
         {currentQuestionIndex === exam.questions.length - 1 ? (
-          <Button colorScheme="teal" onClick={handleSubmit}>
+          <Button colorScheme="teal" onClick={handleSubmit} fontWeight="bold">
             Kirim Jawaban
           </Button>
         ) : (
-          <Button colorScheme="teal" onClick={handleNextQuestion}>
+          <Button
+            colorScheme="teal"
+            onClick={handleNextQuestion}
+            fontWeight="bold"
+          >
             Berikutnya
           </Button>
         )}

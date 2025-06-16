@@ -24,11 +24,14 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   useColorModeValue,
-  Image, // Import Image
+  Image,
+  Badge,
+  Divider,
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon, HamburgerIcon } from "@chakra-ui/icons";
 import { useEffect, useState, useRef } from "react";
-import logo from "../utils/logo.png"; // Import logo
+import logo from "../utils/logo.png";
+import { logout } from "../services/authService";
 
 function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,13 +53,12 @@ function Navbar() {
       const token = localStorage.getItem("token");
       const userRole = localStorage.getItem("role");
 
-      setIsAuthenticated(!!token); // true jika token ada
-      setRole(userRole || ""); // Simpan role
+      setIsAuthenticated(!!token);
+      setRole(userRole || "");
     };
 
-    checkAuth(); // Panggil saat pertama kali render
+    checkAuth();
 
-    // Dengarkan event perubahan token & role
     const handleStorageChange = () => checkAuth();
     window.addEventListener("storage", handleStorageChange);
 
@@ -66,8 +68,7 @@ function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    logout();
     setIsAuthenticated(false);
     setRole("");
     navigate("/login");
@@ -77,11 +78,27 @@ function Navbar() {
   // Menu berdasarkan role
   const menuLinks = (
     <>
-      <Text as={Link} to="/" _hover={{ color: "teal.500" }} mr={4}>
+      <Text
+        as={Link}
+        to="/"
+        _hover={{ color: "teal.400", textDecoration: "underline" }}
+        fontWeight="bold"
+        mr={{ base: 2, md: 1 }}
+        fontSize={{ base: "md", md: "sm", lg: "md" }}
+        whiteSpace="nowrap"
+      >
         Home
       </Text>
       {role === "admin" && (
-        <Text as={Link} to="/manage" _hover={{ color: "teal.500" }} mr={4}>
+        <Text
+          as={Link}
+          to="/manage"
+          _hover={{ color: "teal.400", textDecoration: "underline" }}
+          fontWeight="bold"
+          mr={{ base: 2, md: 1 }}
+          fontSize={{ base: "md", md: "sm", lg: "md" }}
+          whiteSpace="nowrap"
+        >
           Manage
         </Text>
       )}
@@ -90,16 +107,22 @@ function Navbar() {
           <Text
             as={Link}
             to="/create-exam"
-            _hover={{ color: "teal.500" }}
-            mr={4}
+            _hover={{ color: "teal.400", textDecoration: "underline" }}
+            fontWeight="bold"
+            mr={{ base: 2, md: 1 }}
+            fontSize={{ base: "md", md: "sm", lg: "md" }}
+            whiteSpace="nowrap"
           >
             Create
           </Text>
           <Text
             as={Link}
             to="/examiner-managing"
-            _hover={{ color: "teal.500" }}
-            mr={4}
+            _hover={{ color: "teal.400", textDecoration: "underline" }}
+            fontWeight="bold"
+            mr={{ base: 2, md: 1 }}
+            fontSize={{ base: "md", md: "sm", lg: "md" }}
+            whiteSpace="nowrap"
           >
             Manage
           </Text>
@@ -107,50 +130,109 @@ function Navbar() {
       )}
       {role === "student" && (
         <>
-          <Text as={Link} to="/exams" _hover={{ color: "teal.500" }} mr={4}>
+          <Text
+            as={Link}
+            to="/exams"
+            _hover={{ color: "teal.400", textDecoration: "underline" }}
+            fontWeight="bold"
+            mr={{ base: 2, md: 1 }}
+            fontSize={{ base: "md", md: "sm", lg: "md" }}
+            whiteSpace="nowrap"
+          >
             My Exams
           </Text>
           <Text
             as={Link}
             to="/my-results"
-            _hover={{ color: "teal.500" }}
-            mr={4}
+            _hover={{ color: "teal.400", textDecoration: "underline" }}
+            fontWeight="bold"
+            mr={{ base: 2, md: 1 }}
+            fontSize={{ base: "md", md: "sm", lg: "md" }}
+            whiteSpace="nowrap"
           >
             My Results
           </Text>
         </>
       )}
-      <Text as={Link} to="/profile" _hover={{ color: "teal.500" }} mr={4}>
+      <Text
+        as={Link}
+        to="/profile"
+        _hover={{ color: "teal.400", textDecoration: "underline" }}
+        fontWeight="bold"
+        mr={0}
+        fontSize={{ base: "md", md: "sm", lg: "md" }}
+        whiteSpace="nowrap"
+      >
         Profile
       </Text>
     </>
   );
 
-  const bg = useColorModeValue("gray.800", "gray.700");
-  const color = useColorModeValue("white", "white");
+  const bg = useColorModeValue("white", "gray.700");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const navShadow = useColorModeValue("md", "lg");
 
   return (
-    <Box bg={bg} p={4} color={color}>
+    <Box
+      bg={bg}
+      borderBottom={`1.5px solid ${borderColor}`}
+      boxShadow={navShadow}
+      py={{ base: 2, md: 2 }}
+      px={{ base: 2, sm: 4, md: 8, lg: 0 }}
+      position="sticky"
+      top={0}
+      zIndex={100}
+    >
       <Flex
         maxW="1200px"
         mx="auto"
         alignItems="center"
         justifyContent="space-between"
+        minH="60px"
+        px={{ base: 0, md: 2, lg: 0 }}
       >
         {/* Brand / Logo */}
-        <HStack>
-          <Image src={logo} alt="OnTest Logo" boxSize="40px" mr={2} />
-          <Heading as="h1" size="lg">
+        <HStack spacing={{ base: 1, md: 2 }}>
+          <Image
+            src={logo}
+            alt="OnTest Logo"
+            boxSize={{ base: "32px", md: "38px" }}
+          />
+          <Heading
+            as="h1"
+            size="md"
+            color="teal.500"
+            letterSpacing="tight"
+            fontWeight="extrabold"
+            ml={1}
+            fontSize={{ base: "lg", md: "xl" }}
+          >
             OnTest
           </Heading>
+          {role && (
+            <Badge
+              colorScheme="purple"
+              ml={2}
+              fontSize={{ base: "0.75em", md: "0.85em" }}
+              px={2}
+              py={0.5}
+              borderRadius="md"
+              textTransform="capitalize"
+            >
+              {role}
+            </Badge>
+          )}
         </HStack>
 
         {/* Desktop Menu */}
         <HStack
           display={{ base: "none", md: "flex" }}
           justifyContent="center"
-          spacing={4}
-          flex="1"
+          spacing={{ base: 1, md: 2, lg: 3 }}
+          ml={{ md: 2, lg: 8 }}
+          flexWrap="wrap"
+          overflowX="auto"
+          width="auto"
         >
           {isAuthenticated ? menuLinks : null}
         </HStack>
@@ -158,23 +240,25 @@ function Navbar() {
         <Spacer />
 
         {/* Desktop Login/Register & Dark Mode */}
-        <HStack spacing={4} display={{ base: "none", md: "flex" }}>
+        <HStack spacing={2} display={{ base: "none", md: "flex" }}>
           <IconButton
             aria-label="Toggle Dark Mode"
             icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
             onClick={toggleColorMode}
             colorScheme="teal"
+            variant="ghost"
+            fontSize="xl"
           />
           {isAuthenticated ? (
-            <Button colorScheme="red" onClick={onLogoutOpen}>
+            <Button colorScheme="red" onClick={onLogoutOpen} size="sm">
               Logout
             </Button>
           ) : (
             <>
-              <Button as={Link} to="/login" colorScheme="teal">
+              <Button as={Link} to="/login" colorScheme="teal" size="sm">
                 Login
               </Button>
-              <Button as={Link} to="/register" colorScheme="teal">
+              <Button as={Link} to="/register" colorScheme="teal" size="sm">
                 Register
               </Button>
             </>
@@ -188,12 +272,16 @@ function Navbar() {
             icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
             onClick={toggleColorMode}
             colorScheme="teal"
-            mr={2}
+            variant="ghost"
+            fontSize="xl"
+            mr={1}
           />
           <IconButton
             icon={<HamburgerIcon />}
             onClick={onOpen}
             aria-label="Open Menu"
+            colorScheme="teal"
+            variant="outline"
           />
         </HStack>
       </Flex>
@@ -203,13 +291,33 @@ function Navbar() {
         <DrawerOverlay>
           <DrawerContent>
             <DrawerCloseButton />
-            <DrawerHeader>Menu</DrawerHeader>
+            <DrawerHeader>
+              <HStack>
+                <Image src={logo} alt="OnTest Logo" boxSize="32px" />
+                <Text fontWeight="bold" color="teal.500">
+                  OnTest
+                </Text>
+                {role && (
+                  <Badge
+                    colorScheme="purple"
+                    ml={2}
+                    fontSize="0.85em"
+                    px={2}
+                    py={0.5}
+                    borderRadius="md"
+                    textTransform="capitalize"
+                  >
+                    {role}
+                  </Badge>
+                )}
+              </HStack>
+            </DrawerHeader>
+            <Divider mb={2} />
             <DrawerBody>
               <VStack spacing={4} align={"left"}>
                 {isAuthenticated ? (
                   <>
                     {menuLinks}
-                    {/* Tombol Logout di Mobile Drawer */}
                     <Button colorScheme="red" onClick={onLogoutOpen} w="full">
                       Logout
                     </Button>
@@ -244,12 +352,12 @@ function Navbar() {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Confirm Logout
+              Konfirmasi Logout
             </AlertDialogHeader>
-            <AlertDialogBody>Are you sure you want to log out?</AlertDialogBody>
+            <AlertDialogBody>Apakah Anda yakin ingin keluar?</AlertDialogBody>
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onLogoutClose}>
-                Cancel
+                Batal
               </Button>
               <Button colorScheme="red" onClick={handleLogout} ml={3}>
                 Logout

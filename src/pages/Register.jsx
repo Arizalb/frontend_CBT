@@ -1,4 +1,4 @@
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { registerUser } from "../services/authService";
@@ -15,9 +15,13 @@ import {
   Heading,
   Link,
   Text,
+  Stack,
+  Icon,
+  Badge,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import Swal from "sweetalert2";
+import { FaUserCircle } from "react-icons/fa";
 
 // Define validation schema
 const schema = yup.object().shape({
@@ -44,7 +48,7 @@ function Register() {
     // Set role to "student" automatically
     const userData = {
       ...data,
-      role: "student", // Set role to student
+      role: "student",
     };
     setLoading(true);
 
@@ -57,15 +61,15 @@ function Register() {
           text: "Silahkan Login",
           confirmButtonText: "Oke",
         }).then(() => {
-          navigate("/login"); // Redirect setelah Swal ditutup
+          navigate("/login");
         });
       }
     } catch (error) {
-      console.error("Registrasi gagal", error.response.data);
+      console.error("Registrasi gagal", error.response?.data);
       Swal.fire({
         icon: "error",
         title: "Gagal Registrasi!",
-        text: error.response.data.message,
+        text: error.response?.data?.message || "Terjadi kesalahan.",
         confirmButtonText: "Oke",
       });
     } finally {
@@ -73,25 +77,58 @@ function Register() {
     }
   };
 
-  const bgColor = useColorModeValue("gray.100", "gray.900");
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.700");
   const inputBgColor = useColorModeValue("white", "gray.700");
-  const textColor = useColorModeValue("black", "white");
+  const textColor = useColorModeValue("gray.800", "gray.200");
+  const accent = useColorModeValue("purple.400", "purple.300");
 
   return (
-    <Box minH={"100vh"}>
+    <Box p={6} maxW="1000px" mx="auto" mt={12} minH={"100vh"}>
       <Box
-        p={6}
+        p={8}
         maxW="400px"
         mx="auto"
-        my={12}
-        bg={bgColor}
+        bg={cardBg}
         color={textColor}
-        borderRadius="md"
+        borderRadius="xl"
+        boxShadow="lg"
+        border={`1px solid ${useColorModeValue("gray.200", "gray.600")}`}
+        mt={12}
       >
-        {" "}
-        <Heading as="h2" size="lg" mb={6}>
-          Register
+        <Stack
+          direction="row"
+          align="center"
+          justify="center"
+          mb={4}
+          spacing={2}
+        >
+          <Icon as={FaUserCircle} color={accent} boxSize={7} />
+          <Badge
+            colorScheme="teal"
+            fontSize="1em"
+            px={3}
+            py={1}
+            borderRadius="full"
+          >
+            Register
+          </Badge>
+        </Stack>
+        <Heading
+          as="h2"
+          size="lg"
+          mb={2}
+          color={useColorModeValue("teal.600", "teal.300")}
+          fontWeight="extrabold"
+          letterSpacing="tight"
+          lineHeight="shorter"
+          textAlign="center"
+        >
+          Daftar Akun Baru
         </Heading>
+        <Text fontSize="md" color={textColor} mb={6} textAlign="center">
+          Silakan isi data di bawah untuk membuat akun CBT.
+        </Text>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FormControl isInvalid={errors.name} mb={4}>
             <FormLabel>Nama</FormLabel>
@@ -109,7 +146,7 @@ function Register() {
             </FormErrorMessage>
           </FormControl>
 
-          <FormControl isInvalid={errors.password} mb={4}>
+          <FormControl isInvalid={errors.password} mb={6}>
             <FormLabel>Password</FormLabel>
             <Input
               type="password"
@@ -121,13 +158,14 @@ function Register() {
             </FormErrorMessage>
           </FormControl>
 
-          {/* Removed role selection since it's now fixed */}
-
           <Button
             colorScheme="teal"
             type="submit"
             width="full"
             isDisabled={loading}
+            size="lg"
+            fontWeight="bold"
+            mb={2}
           >
             {loading ? <Spinner size="sm" /> : "Register"}
           </Button>

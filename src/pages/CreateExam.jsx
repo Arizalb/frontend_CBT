@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Box,
   Heading,
@@ -12,7 +12,11 @@ import {
   Grid,
   GridItem,
   useToast,
+  Flex,
+  IconButton,
+  useColorModeValue,
 } from "@chakra-ui/react";
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { createExam } from "../services/examService";
 
 function CreateExam() {
@@ -21,10 +25,11 @@ function CreateExam() {
   const [duration, setDuration] = useState(60);
   const [totalMarks, setTotalMarks] = useState(100);
   const [questions, setQuestions] = useState([]);
-  const [token, setToken] = useState(""); // Tambahkan state untuk token
+  const [token, setToken] = useState("");
   const toast = useToast();
+  const lastQuestionRef = useRef(null);
 
-  // Handle dynamic questions (both multiple choice and essay)
+  // Tambah pertanyaan baru
   const addQuestionField = (type) => {
     const newQuestion =
       type === "multiple_choice"
@@ -41,34 +46,85 @@ function CreateExam() {
             marks: 0,
           };
 
-    setQuestions([...questions, newQuestion]);
+    setQuestions((prev) => [...prev, newQuestion]);
+    setTimeout(() => {
+      lastQuestionRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
-  // Update the text of a specific question dynamically
+  // Hapus pertanyaan
+  const removeQuestion = (index) => {
+    setQuestions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Update pertanyaan
   const updateQuestion = (index, field, value) => {
-    const updatedQuestions = [...questions];
-    updatedQuestions[index][field] = value;
-    setQuestions(updatedQuestions);
+    setQuestions((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
+    });
   };
 
-  // Update the options for multiple-choice questions
+  // Update opsi pilihan ganda
   const updateOption = (qIndex, optionIndex, value) => {
-    const updatedQuestions = [...questions];
-    updatedQuestions[qIndex].options[optionIndex] = value;
-    setQuestions(updatedQuestions);
+    setQuestions((prev) => {
+      const updated = [...prev];
+      updated[qIndex].options[optionIndex] = value;
+      return updated;
+    });
   };
 
-  // Handle form submission
-  const handleSubmit = async () => {
-    if (!token) {
+  // Validasi sebelum submit
+  const validate = () => {
+    if (!title || !description || !duration || !totalMarks || !token) {
       toast({
-        title: "Token wajib diisi.",
+        title: "Semua field wajib diisi.",
         status: "error",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
       });
-      return;
+      return false;
     }
+    if (questions.length === 0) {
+      toast({
+        title: "Minimal harus ada satu pertanyaan.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      return false;
+    }
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.questionText || !q.marks) {
+        toast({
+          title: `Pertanyaan ${i + 1} belum lengkap.`,
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+        return false;
+      }
+      if (
+        q.type === "multiple_choice" &&
+        (q.options.some((opt) => !opt) || !q.correctAnswer)
+      ) {
+        toast({
+          title: `Pilihan ganda pada pertanyaan ${i + 1} belum lengkap.`,
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Submit ujian
+  const handleSubmit = async () => {
+    if (!validate()) return;
 
     const examData = {
       title,
@@ -87,11 +143,13 @@ function CreateExam() {
         duration: 5000,
         isClosable: true,
       });
+      setTitle("");
+      setDescription("");
+      setDuration(60);
+      setTotalMarks(100);
+      setQuestions([]);
+      setToken("");
     } catch (error) {
-      console.error(
-        "Error details:",
-        error.response ? error.response.data : error.message
-      );
       toast({
         title: "Gagal membuat ujian.",
         description: error.response
@@ -126,131 +184,172 @@ function CreateExam() {
           />
         </FormControl>
 
-        <FormControl>
-          <FormLabel>Durasi (menit)</FormLabel>
-          <Input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-          />
-        </FormControl>
-
-        <FormControl>
-          <FormLabel>Total Marks</FormLabel>
-          <Input
-            type="number"
-            value={totalMarks}
-            onChange={(e) => setTotalMarks(Number(e.target.value))}
-          />
-        </FormControl>
+        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+          <GridItem>
+            <FormControl>
+              <FormLabel>Durasi (menit)</FormLabel>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+              />
+            </FormControl>
+          </GridItem>
+          <GridItem>
+            <FormControl>
+              <FormLabel>Total Marks</FormLabel>
+              <Input
+                type="number"
+                value={totalMarks}
+                onChange={(e) => setTotalMarks(Number(e.target.value))}
+              />
+            </FormControl>
+          </GridItem>
+        </Grid>
 
         {/* Section for dynamic questions */}
-        {questions.map((question, index) => (
-          <Box key={index} borderWidth="1px" borderRadius="lg" p={4} mb={4}>
-            {question.type === "multiple_choice" ? (
-              <>
-                <Heading size="md" mb={4}>
-                  Pertanyaan Pilihan Ganda
+        <Box>
+          <Flex mb={2} gap={2}>
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="yellow"
+              size="md"
+              onClick={() => addQuestionField("multiple_choice")}
+            >
+              Tambah Pilihan Ganda
+            </Button>
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="yellow"
+              size="md"
+              onClick={() => addQuestionField("essay")}
+            >
+              Tambah Essay
+            </Button>
+          </Flex>
+          {questions.map((question, index) => (
+            <Box
+              key={index}
+              borderWidth="2px"
+              borderColor={
+                question.type === "multiple_choice" ? "yellow.300" : "gray.300"
+              }
+              borderRadius="lg"
+              p={4}
+              mb={4}
+              bg={
+                question.type === "multiple_choice"
+                  ? useColorModeValue("yellow.100", "yellow.900")
+                  : useColorModeValue("gray.100", "gray.700")
+              }
+              boxShadow="md"
+              position="relative"
+            >
+              <Flex justify="space-between" align="center" mb={2}>
+                <Heading size="sm">
+                  {question.type === "multiple_choice"
+                    ? `Pilihan Ganda #${index + 1}`
+                    : `Essay #${index + 1}`}
                 </Heading>
-                <FormControl>
-                  <FormLabel>Teks Pertanyaan</FormLabel>
-                  <Input
-                    value={question.questionText}
-                    onChange={(e) =>
-                      updateQuestion(index, "questionText", e.target.value)
-                    }
-                    placeholder="Teks pertanyaan"
-                  />
-                </FormControl>
-
-                <FormControl mt={4}>
-                  <FormLabel>Opsi Jawaban (A, B, C, D)</FormLabel>
-                  {["A", "B", "C", "D"].map((label, idx) => (
+                <IconButton
+                  aria-label="Hapus pertanyaan"
+                  icon={<DeleteIcon />}
+                  colorScheme="red"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeQuestion(index)}
+                />
+              </Flex>
+              {question.type === "multiple_choice" ? (
+                <>
+                  <FormControl>
+                    <FormLabel>Teks Pertanyaan</FormLabel>
                     <Input
-                      key={label}
-                      value={question.options[idx]}
-                      onChange={(e) => updateOption(index, idx, e.target.value)}
-                      placeholder={`Jawaban ${label}`}
-                      mb={2}
+                      bg={useColorModeValue("white", "gray.800")}
+                      color={useColorModeValue("black", "white")}
+                      value={question.questionText}
+                      onChange={(e) =>
+                        updateQuestion(index, "questionText", e.target.value)
+                      }
+                      placeholder="Teks pertanyaan"
                     />
-                  ))}
-                </FormControl>
+                  </FormControl>
 
-                <FormControl mt={4}>
-                  <FormLabel>Jawaban Benar</FormLabel>
-                  <Select
-                    value={question.correctAnswer}
-                    onChange={(e) =>
-                      updateQuestion(index, "correctAnswer", e.target.value)
-                    }
-                  >
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                  </Select>
-                </FormControl>
+                  <FormControl mt={4}>
+                    <FormLabel>Opsi Jawaban (A, B, C, D)</FormLabel>
+                    {["A", "B", "C", "D"].map((label, idx) => (
+                      <Input
+                        key={label}
+                        bg={useColorModeValue("white", "gray.800")}
+                        color={useColorModeValue("black", "white")}
+                        value={question.options[idx]}
+                        onChange={(e) =>
+                          updateOption(index, idx, e.target.value)
+                        }
+                        placeholder={`Jawaban ${label}`}
+                        mb={2}
+                      />
+                    ))}
+                  </FormControl>
 
-                <FormControl mt={4}>
-                  <FormLabel>Nilai Pertanyaan</FormLabel>
-                  <Input
-                    type="number"
-                    value={question.marks}
-                    onChange={(e) =>
-                      updateQuestion(index, "marks", Number(e.target.value))
-                    }
-                    placeholder="Nilai"
-                  />
-                </FormControl>
-              </>
-            ) : (
-              <>
-                <Heading size="md" mb={4}>
-                  Pertanyaan Essay
-                </Heading>
-                <FormControl>
-                  <FormLabel>Teks Pertanyaan</FormLabel>
-                  <Textarea
-                    value={question.questionText}
-                    onChange={(e) =>
-                      updateQuestion(index, "questionText", e.target.value)
-                    }
-                    placeholder="Teks pertanyaan essay"
-                  />
-                </FormControl>
+                  <FormControl mt={4}>
+                    <FormLabel>Jawaban Benar</FormLabel>
+                    <Select
+                      value={question.correctAnswer}
+                      onChange={(e) =>
+                        updateQuestion(index, "correctAnswer", e.target.value)
+                      }
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </Select>
+                  </FormControl>
 
-                <FormControl mt={4}>
-                  <FormLabel>Nilai Pertanyaan</FormLabel>
-                  <Input
-                    type="number"
-                    value={question.marks}
-                    onChange={(e) =>
-                      updateQuestion(index, "marks", Number(e.target.value))
-                    }
-                    placeholder="Nilai"
-                  />
-                </FormControl>
-              </>
-            )}
-          </Box>
-        ))}
+                  <FormControl mt={4}>
+                    <FormLabel>Nilai Pertanyaan</FormLabel>
+                    <Input
+                      type="number"
+                      value={question.marks}
+                      onChange={(e) =>
+                        updateQuestion(index, "marks", Number(e.target.value))
+                      }
+                      placeholder="Nilai"
+                    />
+                  </FormControl>
+                </>
+              ) : (
+                <>
+                  <FormControl>
+                    <FormLabel>Teks Pertanyaan</FormLabel>
+                    <Textarea
+                      bg={useColorModeValue("white", "gray.800")}
+                      color={useColorModeValue("black", "white")}
+                      value={question.questionText}
+                      onChange={(e) =>
+                        updateQuestion(index, "questionText", e.target.value)
+                      }
+                      placeholder="Teks pertanyaan essay"
+                    />
+                  </FormControl>
 
-        {/* Buttons to add new questions */}
-        <Button
-          colorScheme="yellow"
-          size="md"
-          onClick={() => addQuestionField("multiple_choice")}
-        >
-          + Pilihan Ganda
-        </Button>
-        <Button
-          colorScheme="yellow"
-          size="md"
-          mt={2}
-          onClick={() => addQuestionField("essay")}
-        >
-          + Essay
-        </Button>
+                  <FormControl mt={4}>
+                    <FormLabel>Nilai Pertanyaan</FormLabel>
+                    <Input
+                      type="number"
+                      value={question.marks}
+                      onChange={(e) =>
+                        updateQuestion(index, "marks", Number(e.target.value))
+                      }
+                      placeholder="Nilai"
+                    />
+                  </FormControl>
+                </>
+              )}
+            </Box>
+          ))}
+        </Box>
 
         {/* Input token */}
         <FormControl mt={6}>

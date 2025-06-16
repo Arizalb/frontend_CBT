@@ -1,4 +1,4 @@
-import { useState } from "react"; // Tambahkan useState
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -16,8 +16,12 @@ import {
   Heading,
   Text,
   Link,
+  Stack,
+  Icon,
+  Badge,
 } from "@chakra-ui/react";
 import Swal from "sweetalert2";
+import { FaUserCircle } from "react-icons/fa";
 
 const schema = yup.object().shape({
   email: yup.string().email("Email tidak valid").required("Email wajib diisi"),
@@ -36,11 +40,10 @@ function Login() {
     resolver: yupResolver(schema),
   });
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // State untuk loading
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data) => {
-    setLoading(true); // Aktifkan loading
-
+    setLoading(true);
     try {
       const response = await loginUser(data);
 
@@ -51,7 +54,7 @@ function Login() {
           text: "Selamat datang, " + localStorage.getItem("name"),
           confirmButtonText: "Oke",
         }).then(() => {
-          navigate("/"); // Redirect setelah Swal ditutup
+          navigate("/");
         });
       } else {
         Swal.fire({
@@ -66,33 +69,66 @@ function Login() {
       Swal.fire({
         icon: "error",
         title: "Gagal Login!",
-        text: error.response.data.message,
+        text: error?.response?.data?.message || "Terjadi kesalahan.",
         confirmButtonText: "Oke",
       });
     } finally {
-      setLoading(false); // Matikan loading setelah proses selesai
+      setLoading(false);
     }
   };
 
-  const bgColor = useColorModeValue("gray.100", "gray.900");
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const cardBg = useColorModeValue("white", "gray.700");
   const inputBgColor = useColorModeValue("white", "gray.700");
-  const textColor = useColorModeValue("black", "white");
+  const textColor = useColorModeValue("gray.800", "gray.200");
+  const accent = useColorModeValue("purple.400", "purple.300");
 
   return (
-    <Box minH={"100vh"}>
+    <Box p={6} maxW="1000px" mx="auto" mt={12} minH={"100vh"}>
       <Box
-        p={6}
+        p={8}
         maxW="400px"
         mx="auto"
-        mt={12}
-        bg={bgColor}
+        bg={cardBg}
         color={textColor}
-        borderRadius="md"
+        borderRadius="xl"
         boxShadow="lg"
+        border={`1px solid ${useColorModeValue("gray.200", "gray.600")}`}
+        mt={12}
       >
-        <Heading as="h2" size="lg" mb={6}>
-          Login
+        <Stack
+          direction="row"
+          align="center"
+          justify="center"
+          mb={4}
+          spacing={2}
+        >
+          <Icon as={FaUserCircle} color={accent} boxSize={7} />
+          <Badge
+            colorScheme="teal"
+            fontSize="1em"
+            px={3}
+            py={1}
+            borderRadius="full"
+          >
+            Login
+          </Badge>
+        </Stack>
+        <Heading
+          as="h2"
+          size="lg"
+          mb={2}
+          color={useColorModeValue("teal.600", "teal.300")}
+          fontWeight="extrabold"
+          letterSpacing="tight"
+          lineHeight="shorter"
+          textAlign="center"
+        >
+          Selamat Datang!
         </Heading>
+        <Text fontSize="md" color={textColor} mb={6} textAlign="center">
+          Silakan login untuk melanjutkan ke dashboard CBT.
+        </Text>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FormControl isInvalid={errors.email} mb={4}>
             <FormLabel>Email</FormLabel>
@@ -118,10 +154,12 @@ function Login() {
             colorScheme="teal"
             type="submit"
             width="full"
-            isDisabled={loading} // Nonaktifkan tombol saat loading
+            isDisabled={loading}
+            size="lg"
+            fontWeight="bold"
+            mb={2}
           >
-            {loading ? <Spinner size="sm" /> : "Login"}{" "}
-            {/* Spinner saat loading */}
+            {loading ? <Spinner size="sm" /> : "Login"}
           </Button>
         </form>
         <Text mt={4} textAlign="center">

@@ -30,6 +30,7 @@ function ManageExamExaminer() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
   const cancelRef = useRef();
+  const [deleting, setDeleting] = useState(false);
 
   const bgColor = useColorModeValue("white", "gray.700");
   const headingColor = useColorModeValue("orange.400", "yellow.400");
@@ -39,39 +40,46 @@ function ManageExamExaminer() {
       try {
         const data = await getAllExams();
         setExams(data);
-        setLoading(false);
       } catch (error) {
-        console.error("Failed to fetch exams", error);
+        toast({
+          title: "Failed to fetch exams.",
+          description: error.message || "Please try again later.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
       }
     };
     fetchExams();
-  }, []);
+  }, [toast]);
 
-  const handleDelete = async (examId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this exam?"
-    );
-    if (!confirmDelete) return;
-
+  const handleDelete = async () => {
+    if (!selectedExam) return;
+    setDeleting(true);
     try {
-      await deleteExam(examId);
+      await deleteExam(selectedExam._id);
+      setExams((prev) => prev.filter((exam) => exam._id !== selectedExam._id));
       toast({
         title: "Exam deleted.",
-        description: "The exam has been successfully deleted.",
+        description: `Exam "${selectedExam.title}" has been deleted.`,
         status: "success",
         duration: 3000,
         isClosable: true,
       });
-      setExams(exams.filter((exam) => exam._id !== examId)); // Remove exam from UI
+      onClose();
+      setSelectedExam(null);
     } catch (error) {
-      console.error("Failed to delete exam:", error);
       toast({
         title: "Error deleting exam.",
-        description: "There was an error deleting the exam. Please try again.",
+        description: error.message || "There was an error deleting the exam.",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -108,9 +116,7 @@ function ManageExamExaminer() {
                 <Text fontSize="sm">
                   Total Marks: <strong>{exam.totalMarks}</strong>
                 </Text>
-                <Badge colorScheme={exam.isActive ? "green" : "red"}>
-                  {exam.isActive ? "Active" : "Inactive"}
-                </Badge>
+                {exam.isActive && <Badge colorScheme="green">Active</Badge>}
               </Flex>
               <Text fontSize="sm" color="gray.500">
                 Exam Date: {new Date(exam.examDate).toLocaleDateString()}
@@ -143,7 +149,10 @@ function ManageExamExaminer() {
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
-        onClose={onClose}
+        onClose={() => {
+          setSelectedExam(null);
+          onClose();
+        }}
       >
         <AlertDialogOverlay>
           <AlertDialogContent>
@@ -157,13 +166,14 @@ function ManageExamExaminer() {
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
+              <Button ref={cancelRef} onClick={onClose} isDisabled={deleting}>
                 Cancel
               </Button>
               <Button
                 colorScheme="red"
-                onClick={() => handleDelete(selectedExam._id)}
+                onClick={handleDelete}
                 ml={3}
+                isLoading={deleting}
               >
                 Delete
               </Button>

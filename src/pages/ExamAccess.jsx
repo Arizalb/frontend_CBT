@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Box, Button, Input, Heading, Text, useToast } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getExamById, validateExamToken } from "../services/examService";
 
 function ExamAccess() {
   const { id } = useParams();
   const [token, setToken] = useState("");
   const toast = useToast();
+  const navigate = useNavigate();
 
   const handleAccess = async () => {
     try {
@@ -14,6 +15,7 @@ function ExamAccess() {
       const isValid = await validateExamToken(id, token);
       if (isValid) {
         // Navigate to the exam if valid
+        // navigate(/exams/${id})
         window.location.href = `/exams/${id}`;
       } else {
         toast({

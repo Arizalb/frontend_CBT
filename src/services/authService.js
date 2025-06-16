@@ -57,4 +57,7 @@ export const logout = () => {
   localStorage.removeItem("role");
   localStorage.removeItem("name");
   localStorage.removeItem("studentId");
+  sessionStorage.removeItem("completedExamIds");
+  sessionStorage.removeItem("examDetails");
+  sessionStorage.removeItem("userProfile");
 };
