@@ -20,6 +20,7 @@ import {
   ModalFooter,
   Heading,
   Flex,
+  useToast,
 } from "@chakra-ui/react";
 import { registerUser } from "../services/authService"; // Pastikan path ini benar
 import { h3 } from "framer-motion/client";
@@ -35,7 +36,8 @@ const schema = yup.object().shape({
   role: yup.string().required("Role wajib dipilih"),
 });
 
-const AddUser = () => {
+const AddUser = ({ onUserAdded }) => {
+  const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     register,
@@ -49,6 +51,16 @@ const AddUser = () => {
     try {
       await registerUser(data); // Kirim data langsung
       onClose(); // Tutup modal setelah pendaftaran berhasil
+      if (onUserAdded) {
+        onUserAdded(); // Panggil callback jika ada
+      }
+      toast({
+        title: "Berhasil",
+        description: "User berhasil ditambahkan.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
     } catch (error) {
       console.error("Registrasi gagal", error);
     }

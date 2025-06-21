@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAllExams, deleteExam } from "../services/examService";
 import {
   Box,
@@ -15,12 +15,21 @@ import {
   useToast,
   VStack,
   TableContainer,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from "@chakra-ui/react";
 
 function ManageExams() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedExamId, setSelectedExamId] = useState(null);
+  const cancelRef = useRef();
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -43,10 +52,15 @@ function ManageExams() {
     fetchExams();
   }, []);
 
-  const handleDeleteExam = async (examId) => {
+  const confirmDelete = (examId) => {
+    setSelectedExamId(examId);
+    setIsOpen(true);
+  };
+
+  const handleConfirmDeleteExam = async () => {
     try {
-      await deleteExam(examId);
-      setExams(exams.filter((exam) => exam._id !== examId));
+      await deleteExam(selectedExamId);
+      setExams(exams.filter((exam) => exam._id !== selectedExamId));
       toast({
         title: "Success",
         description: "Exam deleted successfully",
@@ -63,6 +77,9 @@ function ManageExams() {
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsOpen(false);
+      setSelectedExamId(null);
     }
   };
 
@@ -99,7 +116,7 @@ function ManageExams() {
                   <Td>
                     <Button
                       colorScheme="red"
-                      onClick={() => handleDeleteExam(exam._id)}
+                      onClick={() => confirmDelete(exam._id)}
                     >
                       Delete
                     </Button>
@@ -110,6 +127,37 @@ function ManageExams() {
           </Table>
         </TableContainer>
       </VStack>
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete User
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete this exam? This action cannot be
+              undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={handleConfirmDeleteExam}
+                ml={3}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }
