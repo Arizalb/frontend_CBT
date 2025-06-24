@@ -54,7 +54,7 @@ function Register() {
 
     try {
       const response = await registerUser(userData);
-      if (response.success) {
+      if (response && response._id) {
         Swal.fire({
           icon: "success",
           title: "Registrasi Berhasil!",
