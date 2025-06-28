@@ -186,21 +186,24 @@ const ResultsList = () => {
       </Button>
       {results.map((result) => (
         <Box
-          as={Link}
-          to={`/results/${result._id}`}
           key={result._id}
           borderWidth="1px"
           borderRadius="lg"
           p={4}
           w="100%"
-          _hover={{
-            boxShadow: "lg",
-            cursor: "pointer",
-            bg: useColorModeValue("gray.50", "gray.800"),
-          }}
-          transition="all 0.2s"
         >
-          <Text fontSize="lg" fontWeight="bold">
+          <Text
+            fontSize="lg"
+            fontWeight="bold"
+            as={Link}
+            to={`/results/${result._id}`}
+            _hover={{
+              boxShadow: "lg",
+              cursor: "pointer",
+              bg: useColorModeValue("gray.50", "gray.800"),
+            }}
+            transition="all 0.2s"
+          >
             {result.examName}
           </Text>
           <Text>Student: {result.studentName}</Text>

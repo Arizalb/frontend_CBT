@@ -60,7 +60,7 @@ function ExamDetails() {
   // Hanya aktif jika belum submit
   useConfirmExit(
     !isSubmitted,
-    "Apakah Anda yakin ingin keluar dari halaman ujian? Jawaban Anda mungkin tidak tersimpan."
+    "Apakah Anda yakin ingin keluar dari halaman ujian? Pastikan semua soal sudah terisi sebelum keluar."
   );
 
   useEffect(() => {
