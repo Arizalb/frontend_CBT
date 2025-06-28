@@ -33,8 +33,18 @@ function useConfirmExit(when, message) {
     if (!when) return;
 
     const push = navigator.push;
-    navigator.push = (...args) => {
-      if (window.confirm(message)) {
+    navigator.push = async (...args) => {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Keluar dari Ujian?",
+        text: message,
+        showCancelButton: true,
+        confirmButtonText: "Keluar",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#e53e3e",
+        cancelButtonColor: "#38a169",
+      });
+      if (result.isConfirmed) {
         push.apply(navigator, args);
       }
     };
@@ -222,10 +232,23 @@ function ExamDetails() {
         return;
       }
 
-      await submitResult(examId, payload);
-      setIsSubmitted(true);
-      toast({ title: "Jawaban terkirim!", status: "success" });
-      navigate("/my-results");
+      const confirmation = await Swal.fire({
+        icon: "question",
+        title: "Kirim Jawaban?",
+        text: "Pastikan Anda telah memeriksa semua jawaban dengan benar sebelum mengirim. Apakah Anda yakin ingin mengirim jawaban sekarang?",
+        showCancelButton: true,
+        confirmButtonText: "Kirim",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#38a169",
+        cancelButtonColor: "#e53e3e",
+      });
+
+      if (confirmation.isConfirmed) {
+        await submitResult(examId, payload);
+        setIsSubmitted(true);
+        toast({ title: "Jawaban terkirim!", status: "success" });
+        navigate("/my-results");
+      }
     } catch (error) {
       toast({
         title: "Gagal mengirim jawaban / Anda sudah submit",
