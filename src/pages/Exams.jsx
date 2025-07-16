@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAllExams, getExamById } from "../services/examService";
+import { getAllExams, getExamById } from "../services/examService"; // Menghapus validateExamToken
 import {
   Box,
   Heading,
@@ -21,6 +21,7 @@ import {
   ModalBody,
   ModalCloseButton,
   Icon,
+  useToast, // Import useToast
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { FaClipboardList, FaCheckCircle } from "react-icons/fa";
@@ -29,9 +30,10 @@ import { useNavigate } from "react-router-dom";
 function Exams() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedExam, setSelectedExam] = useState(null);
+  const [selectedExam, setSelectedExam] = useState(null); // Akan menyimpan detail lengkap exam
   const [token, setToken] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const toast = useToast(); // Inisialisasi useToast
 
   const navigate = useNavigate();
 
@@ -39,20 +41,28 @@ function Exams() {
     setLoading(true);
     try {
       const data = await getAllExams();
-      // Simpan hanya metadata yang aman
+      // Simpan hanya metadata yang aman, termasuk 'deadline'
       const safeExams = data.map(
-        ({ _id, title, description, totalMarks, examDate }) => ({
+        ({ _id, title, description, totalMarks, deadline }) => ({
+          // Menggunakan deadline
           _id,
           title,
           description,
           totalMarks,
-          examDate,
+          deadline, // Menyimpan deadline
         })
       );
       setExams(safeExams);
       sessionStorage.setItem("allExams", JSON.stringify(safeExams));
     } catch (error) {
       console.error("Gagal mendapatkan data ujian", error);
+      toast({
+        title: "Gagal memuat daftar ujian.",
+        description: "Silakan coba refresh halaman.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -74,13 +84,26 @@ function Exams() {
   };
 
   const handleOpenModal = (exam) => {
-    setSelectedExam({ _id: exam._id, title: exam.title }); // set minimal info
+    // Saat modal dibuka, kita perlu fetch detail exam lengkap
+    // agar selectedExam memiliki properti 'token' untuk validasi
     setIsModalOpen(true);
+    setToken(""); // Reset token input setiap kali modal dibuka
 
-    // Fetch detail exam di background
     getExamById(exam._id)
-      .then((detailExam) => setSelectedExam(detailExam))
-      .catch(() => alert("Gagal mengambil detail ujian"));
+      .then((detailExam) => {
+        setSelectedExam(detailExam); // Set detail exam lengkap, termasuk token
+      })
+      .catch((error) => {
+        console.error("Gagal mengambil detail ujian:", error);
+        toast({
+          title: "Gagal mengambil detail ujian.",
+          description: "Terjadi kesalahan saat memuat informasi ujian.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        setIsModalOpen(false); // Tutup modal jika gagal fetch detail
+      });
   };
 
   const handleCloseModal = () => {
@@ -90,11 +113,29 @@ function Exams() {
   };
 
   const handleSubmit = () => {
+    // Pastikan selectedExam sudah terisi penuh dengan data dari getExamById
+    if (!selectedExam || !selectedExam.token) {
+      toast({
+        title: "Data ujian belum dimuat sepenuhnya.",
+        description: "Silakan coba lagi.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     if (token === selectedExam.token) {
       sessionStorage.setItem("examAccess", selectedExam._id);
       navigate(`/exams/${selectedExam._id}`);
     } else {
-      alert("Token tidak valid. Silakan coba lagi.");
+      toast({
+        title: "Token tidak valid.",
+        description: "Silakan coba lagi.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -225,11 +266,25 @@ function Exams() {
                     <Text fontSize="sm" color={textColor}>
                       Total Nilai: <strong>{exam.totalMarks}</strong>
                     </Text>
-                    <Badge colorScheme="green">Aktif</Badge>
+                    {/* Menampilkan status berdasarkan deadline */}
+                    {exam.deadline && new Date(exam.deadline) > new Date() ? (
+                      <Badge colorScheme="green">Aktif</Badge>
+                    ) : (
+                      <Badge colorScheme="red">Telah Berakhir</Badge>
+                    )}
                   </Flex>
                   <Text fontSize="sm" color={textColor}>
-                    Tanggal Ujian:{" "}
-                    {new Date(exam.examDate).toLocaleDateString()}
+                    Batas Waktu:{" "}
+                    {exam.deadline
+                      ? new Date(exam.deadline).toLocaleDateString() +
+                        " " +
+                        new Date(exam.deadline).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      : "N/A"}{" "}
+                    {/* Menggunakan deadline dengan format 24 jam */}
                   </Text>
                 </Stack>
                 <Button
@@ -237,7 +292,11 @@ function Exams() {
                   colorScheme="teal"
                   leftIcon={<FaCheckCircle />}
                   onClick={() => handleOpenModal(exam)}
-                  isFullWidth // ini benar, tetap di sini
+                  isFullWidth
+                  // Nonaktifkan tombol jika ujian sudah berakhir
+                  isDisabled={
+                    exam.deadline && new Date(exam.deadline) <= new Date()
+                  }
                 >
                   Kerjakan Ujian
                 </Button>
@@ -253,18 +312,27 @@ function Exams() {
           <ModalHeader>Masukkan Token Ujian</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Input
-              placeholder="Masukkan token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              autoFocus
-            />
+            {/* Tampilkan spinner atau pesan loading jika detail exam belum dimuat */}
+            {!selectedExam ? (
+              <Center>
+                <Spinner size="md" />
+                <Text ml={2}>Memuat detail ujian...</Text>
+              </Center>
+            ) : (
+              <Input
+                placeholder="Masukkan token"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                autoFocus
+              />
+            )}
           </ModalBody>
           <ModalFooter>
             <Button
               colorScheme="teal"
               onClick={handleSubmit}
-              isDisabled={!selectedExam || !selectedExam.token}
+              // Tombol masuk dinonaktifkan jika token kosong atau detail exam belum dimuat
+              isDisabled={!token || !selectedExam}
             >
               Masuk
             </Button>

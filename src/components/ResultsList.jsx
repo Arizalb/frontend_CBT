@@ -9,6 +9,7 @@ import {
   Button,
   Badge,
   useColorModeValue,
+  Center, // Added Center for spinner
 } from "@chakra-ui/react";
 import { CheckIcon, CloseIcon, RepeatIcon } from "@chakra-ui/icons";
 import {
@@ -47,6 +48,10 @@ const ResultsList = () => {
             };
           } catch (error) {
             // Jika exam tidak ditemukan (404), tampilkan placeholder
+            console.error(
+              `Error fetching exam for result ${result._id}:`,
+              error
+            );
             return {
               ...result,
               examName: "Exam tidak ditemukan",
@@ -60,6 +65,7 @@ const ResultsList = () => {
       setResults(resultsWithNames);
     } catch (error) {
       console.error("Error fetching results:", error);
+      // Anda bisa menambahkan toast di sini juga jika diperlukan
     } finally {
       setLoading(false);
     }
@@ -70,11 +76,24 @@ const ResultsList = () => {
   }, []);
 
   const checkAnswer = (selectedAnswer, correctAnswer, options) => {
-    const correctIndex = ["A", "B", "C", "D"].indexOf(correctAnswer);
-    return (
-      selectedAnswer === correctAnswer ||
-      options[correctIndex] === selectedAnswer
-    );
+    // Memastikan correctAnswer adalah huruf (A, B, C, D)
+    if (
+      typeof correctAnswer === "string" &&
+      correctAnswer.length === 1 &&
+      ["A", "B", "C", "D"].includes(correctAnswer.toUpperCase())
+    ) {
+      const correctIndex = ["A", "B", "C", "D"].indexOf(
+        correctAnswer.toUpperCase()
+      );
+      // Jika selectedAnswer adalah nilai opsi itu sendiri, bandingkan langsung
+      // Jika selectedAnswer adalah huruf (A, B, C, D), bandingkan dengan correctAnswer
+      return (
+        selectedAnswer === correctAnswer ||
+        options[correctIndex] === selectedAnswer
+      );
+    }
+    // Fallback jika correctAnswer bukan A,B,C,D (misal untuk kasus essay yang tidak ada options)
+    return selectedAnswer === correctAnswer;
   };
 
   const handleGradeChange = (resultId, questionId, grade) => {
@@ -87,7 +106,11 @@ const ResultsList = () => {
   const handleGradeSubmit = async (resultId, questionId) => {
     const grade = essayGrades[`${resultId}-${questionId}`];
 
-    if (!grade) return Swal.fire("Error", "Please enter a grade", "error");
+    if (!grade || isNaN(Number(grade))) {
+      // Pastikan grade adalah angka
+      Swal.fire("Error", "Please enter a valid number for the grade", "error");
+      return;
+    }
 
     // Temukan index dari answer yang sesuai questionId
     const resultIndex = results.findIndex((r) => r._id === resultId);
@@ -116,6 +139,24 @@ const ResultsList = () => {
           ...updatedResult.answers[answerIndex],
           marksObtained: Number(grade),
         };
+        // Perbarui totalMarksObtained secara dinamis setelah grading
+        updatedResult.totalMarksObtained = updatedResult.answers.reduce(
+          (sum, ans) => {
+            const q = updatedResult.questions.find(
+              (qItem) => qItem._id === ans.questionId
+            );
+            if (q && q.type === "multiple_choice") {
+              // Untuk pilihan ganda, nilai sudah ditentukan oleh backend
+              return sum + (ans.marksObtained || 0);
+            } else if (q && q.type === "essay") {
+              // Untuk essay, gunakan marksObtained dari grading
+              return sum + (ans.marksObtained || 0);
+            }
+            return sum;
+          },
+          0
+        );
+
         updated[resultIndex] = updatedResult;
         return updated;
       });
@@ -164,15 +205,19 @@ const ResultsList = () => {
 
   if (loading) {
     return (
-      <Box textAlign="center" mt={6}>
+      <Center h="100vh">
+        {" "}
+        {/* Use Center for full height centering */}
         <Spinner size="lg" />
         <Text mt={2}>Memuat Hasil...</Text>
-      </Box>
+      </Center>
     );
   }
 
   return (
-    <VStack spacing={6} marginY={6}>
+    <VStack spacing={6} marginY={6} px={4} maxW="1000px" mx="auto">
+      {" "}
+      {/* Added padding and max width */}
       <Button
         leftIcon={<RepeatIcon />}
         colorScheme="teal"
@@ -184,130 +229,176 @@ const ResultsList = () => {
       >
         Reload Data
       </Button>
-      {results.map((result) => (
-        <Box
-          key={result._id}
-          borderWidth="1px"
-          borderRadius="lg"
-          p={4}
-          w="100%"
-        >
-          <Text
-            fontSize="lg"
-            fontWeight="bold"
-            as={Link}
-            to={`/results/${result._id}`}
-            _hover={{
-              boxShadow: "lg",
-              cursor: "pointer",
-              bg: useColorModeValue("gray.50", "gray.800"),
-            }}
-            transition="all 0.2s"
+      {results.length === 0 ? (
+        <Text textAlign="center" color="gray.500">
+          No results found.
+        </Text>
+      ) : (
+        results.map((result) => (
+          <Box
+            key={result._id}
+            borderWidth="1px"
+            borderRadius="lg"
+            p={4}
+            w="100%"
+            bg={useColorModeValue("white", "gray.700")} // Dynamic background
+            shadow="md"
           >
-            {result.examName}
-          </Text>
-          <Text>Student: {result.studentName}</Text>
-          <Text>
-            Submitted at: {new Date(result.submittedAt).toLocaleString()}
-          </Text>
-          <Divider my={3} />
-
-          {/* Status Finalisasi */}
-          {result.isChecked || finalizedResultId === result._id ? (
-            <Badge colorScheme="green" mb={2}>
-              Sudah Finalisasi
-            </Badge>
-          ) : null}
-
-          {/* Tampilkan hasil dan nilai jika sudah difinalisasi */}
-          {result.isChecked ? (
-            <Text fontWeight="bold" color="green.500">
-              Total Nilai: {result.totalMarksObtained}
+            <Text
+              fontSize="lg"
+              fontWeight="bold"
+              as={Link}
+              to={`/results/${result._id}`}
+              _hover={{
+                boxShadow: "lg",
+                cursor: "pointer",
+                bg: useColorModeValue("gray.50", "gray.800"),
+              }}
+              transition="all 0.2s"
+            >
+              {result.examName}
             </Text>
-          ) : (
-            // Tampilkan form penilaian jika belum difinalisasi
-            <>
-              {result.answers &&
-                result.answers.map((answer, index) => {
-                  const question = result.questions.find(
-                    (q) => q._id === answer.questionId
-                  );
-
-                  if (!question) return null;
-
-                  return (
-                    <Box key={question._id} mb={2}>
-                      <Text>
-                        Question {index + 1}: {question.questionText}
-                      </Text>
-
-                      {question.type === "multiple_choice" ? (
-                        <Text>
-                          Selected Answer: {answer.selectedAnswer}{" "}
-                          {checkAnswer(
-                            answer.selectedAnswer,
-                            question.correctAnswer,
-                            question.options
-                          ) ? (
-                            <CheckIcon color="green.500" />
-                          ) : (
-                            <CloseIcon color="red.500" />
-                          )}
-                        </Text>
-                      ) : (
-                        <Box>
-                          <Text>Essay Answer: {answer.essayAnswer}</Text>
-
-                          <Input
-                            type="number"
-                            placeholder="Masukkan nilai"
-                            value={
-                              essayGrades[`${result._id}-${question._id}`] || ""
-                            }
-                            onChange={(e) =>
-                              handleGradeChange(
-                                result._id,
-                                question._id,
-                                e.target.value
-                              )
-                            }
-                            mb={2}
-                          />
-                          <Button
-                            onClick={() =>
-                              handleGradeSubmit(result._id, question._id)
-                            }
-                            colorScheme="blue"
-                            isDisabled={
-                              !essayGrades[`${result._id}-${question._id}`]
-                            }
-                          >
-                            Submit Nilai
-                          </Button>
-                        </Box>
-                      )}
-                    </Box>
-                  );
+            <Text>Student: {result.studentName}</Text>
+            <Text>
+              Submitted at:{" "}
+              {new Date(result.submittedAt).toLocaleDateString() +
+                " " +
+                new Date(result.submittedAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
                 })}
+            </Text>
+            <Divider my={3} />
 
-              {/* Tombol finalisasi nilai */}
-              <Button
-                onClick={() => handleFinalize(result._id)}
-                colorScheme="green"
-                mt={4}
-                isDisabled={!isAllEssayGraded(result)}
-              >
-                Finalisasi Nilai
-              </Button>
-              {!isAllEssayGraded(result) && (
-                <Text fontSize="sm" color="orange.400" mt={2}>
-                  Semua essay harus dinilai sebelum finalisasi.
-                </Text>
-              )}
-            </>
-          )}
-        </Box>
-      ))}
+            {/* Status Finalisasi */}
+            {result.isChecked || finalizedResultId === result._id ? (
+              <Badge colorScheme="green" mb={2}>
+                Sudah Finalisasi
+              </Badge>
+            ) : null}
+
+            {/* Tampilkan hasil dan nilai jika sudah difinalisasi */}
+            {result.isChecked ? (
+              <Text fontWeight="bold" color="green.500">
+                Total Nilai: {result.totalMarksObtained}
+              </Text>
+            ) : (
+              // Tampilkan form penilaian jika belum difinalisasi
+              <>
+                {result.answers &&
+                  result.answers.map((answer, index) => {
+                    const question = result.questions.find(
+                      (q) => q._id === answer.questionId
+                    );
+
+                    if (!question) return null;
+
+                    return (
+                      <Box key={question._id} mb={2}>
+                        <Text fontWeight="semibold">
+                          Question {index + 1}: {question.questionText}
+                        </Text>
+
+                        {question.type === "multiple_choice" ? (
+                          <Box pl={2}>
+                            <Text>
+                              Selected Answer: {answer.selectedAnswer}
+                            </Text>
+                            <Text>
+                              Correct Answer: {question.correctAnswer}
+                            </Text>
+                            <Flex align="center">
+                              Status:{" "}
+                              {checkAnswer(
+                                answer.selectedAnswer,
+                                question.correctAnswer,
+                                question.options
+                              ) ? (
+                                <Badge ml={1} colorScheme="green">
+                                  Correct <CheckIcon />
+                                </Badge>
+                              ) : (
+                                <Badge ml={1} colorScheme="red">
+                                  Incorrect <CloseIcon />
+                                </Badge>
+                              )}
+                            </Flex>
+                          </Box>
+                        ) : (
+                          <Box pl={2}>
+                            <Text>Essay Answer: {answer.essayAnswer}</Text>
+                            <Text mt={1}>
+                              Marks Obtained:{" "}
+                              {answer.marksObtained !== undefined
+                                ? answer.marksObtained
+                                : "Belum dinilai"}
+                            </Text>
+                            <Flex mt={2} align="center">
+                              <Input
+                                type="number"
+                                placeholder="Masukkan nilai"
+                                value={
+                                  essayGrades[
+                                    `${result._id}-${question._id}`
+                                  ] || ""
+                                }
+                                onChange={(e) =>
+                                  handleGradeChange(
+                                    result._id,
+                                    question._id,
+                                    e.target.value
+                                  )
+                                }
+                                mr={2}
+                                w="120px"
+                              />
+                              <Button
+                                onClick={() =>
+                                  handleGradeSubmit(result._id, question._id)
+                                }
+                                colorScheme="blue"
+                                isDisabled={
+                                  !essayGrades[
+                                    `${result._id}-${question._id}`
+                                  ] ||
+                                  isNaN(
+                                    Number(
+                                      essayGrades[
+                                        `${result._id}-${question._id}`
+                                      ]
+                                    )
+                                  )
+                                }
+                              >
+                                Submit Nilai
+                              </Button>
+                            </Flex>
+                          </Box>
+                        )}
+                      </Box>
+                    );
+                  })}
+
+                {/* Tombol finalisasi nilai */}
+                <Button
+                  onClick={() => handleFinalize(result._id)}
+                  colorScheme="green"
+                  mt={4}
+                  isDisabled={!isAllEssayGraded(result)}
+                >
+                  Finalisasi Nilai
+                </Button>
+                {!isAllEssayGraded(result) && (
+                  <Text fontSize="sm" color="orange.400" mt={2}>
+                    Semua essay harus dinilai sebelum finalisasi.
+                  </Text>
+                )}
+              </>
+            )}
+          </Box>
+        ))
+      )}
     </VStack>
   );
 };

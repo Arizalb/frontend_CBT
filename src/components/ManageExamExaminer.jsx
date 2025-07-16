@@ -97,54 +97,79 @@ function ManageExamExaminer() {
   }
 
   return (
-    <Box>
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-        {exams.map((exam) => (
-          <Box
-            key={exam._id}
-            p={5}
-            shadow="md"
-            borderWidth="1px"
-            borderRadius="lg"
-            bg={bgColor}
-          >
-            <Stack spacing={4}>
-              <Heading as="h3" size="md" color={headingColor}>
-                {exam.title}
-              </Heading>
-              <Flex justifyContent="space-between" alignItems="center">
-                <Text fontSize="sm">
-                  Total Marks: <strong>{exam.totalMarks}</strong>
+    <Box p={6} maxW="1000px" mx="auto" minH={"100vh"}>
+      {" "}
+      {/* Added padding and max width for better layout */}
+      <Heading mb={6} textAlign="center">
+        Manage Exams
+      </Heading>{" "}
+      {/* Added heading for clarity */}
+      {exams.length === 0 ? (
+        <Text textAlign="center" color="gray.500">
+          No exams available to manage.
+        </Text>
+      ) : (
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+          {exams.map((exam) => (
+            <Box
+              key={exam._id}
+              p={5}
+              shadow="md"
+              borderWidth="1px"
+              borderRadius="lg"
+              bg={bgColor}
+            >
+              <Stack spacing={4}>
+                <Heading as="h3" size="md" color={headingColor}>
+                  {exam.title}
+                </Heading>
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm">
+                    Total Marks: <strong>{exam.totalMarks}</strong>
+                  </Text>
+                  {/* Menampilkan status berdasarkan deadline */}
+                  {exam.deadline && new Date(exam.deadline) > new Date() ? (
+                    <Badge colorScheme="green">Aktif</Badge>
+                  ) : (
+                    <Badge colorScheme="red">Telah Berakhir</Badge>
+                  )}
+                </Flex>
+                <Text fontSize="sm" color="gray.500">
+                  Batas Waktu:{" "}
+                  {exam.deadline
+                    ? new Date(exam.deadline).toLocaleDateString() +
+                      " " +
+                      new Date(exam.deadline).toLocaleTimeString("id-ID", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })
+                    : "N/A"}
                 </Text>
-                {exam.isActive && <Badge colorScheme="green">Active</Badge>}
-              </Flex>
-              <Text fontSize="sm" color="gray.500">
-                Exam Date: {new Date(exam.examDate).toLocaleDateString()}
-              </Text>
 
-              <Flex justifyContent="flex-end" mt={4}>
-                <Button
-                  as={Link}
-                  to={`/exams/edit/${exam._id}`}
-                  colorScheme="blue"
-                  size="sm"
-                  mr={2}
-                >
-                  Edit
-                </Button>
-                <Button
-                  colorScheme="red"
-                  size="sm"
-                  onClick={() => confirmDelete(exam)}
-                >
-                  Delete
-                </Button>
-              </Flex>
-            </Stack>
-          </Box>
-        ))}
-      </SimpleGrid>
-
+                <Flex justifyContent="flex-end" mt={4}>
+                  <Button
+                    as={Link}
+                    to={`/exams/edit/${exam._id}`}
+                    colorScheme="blue"
+                    size="sm"
+                    mr={2}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    colorScheme="red"
+                    size="sm"
+                    onClick={() => confirmDelete(exam)}
+                  >
+                    Delete
+                  </Button>
+                </Flex>
+              </Stack>
+            </Box>
+          ))}
+        </SimpleGrid>
+      )}
       {/* Confirmation Dialog for Deleting */}
       <AlertDialog
         isOpen={isOpen}

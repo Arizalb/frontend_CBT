@@ -17,12 +17,14 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { createExam } from "../services/examService";
+// Pastikan path ke service Anda benar
+import { createExam } from "../services/examService"; // Baris ini sudah diaktifkan
 
 function CreateExam() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState(60);
+  // Mengganti 'duration' dengan 'deadline'
+  const [deadline, setDeadline] = useState(""); // Menggunakan string untuk input datetime-local
   const [totalMarks, setTotalMarks] = useState(100);
   const [questions, setQuestions] = useState([]);
   const [token, setToken] = useState("");
@@ -77,7 +79,8 @@ function CreateExam() {
 
   // Validasi sebelum submit
   const validate = () => {
-    if (!title || !description || !duration || !totalMarks || !token) {
+    // Memeriksa deadline, bukan duration
+    if (!title || !description || !deadline || !totalMarks || !token) {
       toast({
         title: "Semua field wajib diisi.",
         status: "error",
@@ -97,9 +100,10 @@ function CreateExam() {
     }
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      if (!q.questionText || !q.marks) {
+      if (!q.questionText || q.marks === undefined || q.marks < 0) {
+        // Menambahkan validasi marks
         toast({
-          title: `Pertanyaan ${i + 1} belum lengkap.`,
+          title: `Pertanyaan ${i + 1} belum lengkap atau nilai tidak valid.`,
           status: "error",
           duration: 4000,
           isClosable: true,
@@ -129,23 +133,26 @@ function CreateExam() {
     const examData = {
       title,
       description,
-      duration,
+      // Mengirim deadline sebagai ISO string
+      deadline: new Date(deadline).toISOString(),
       totalMarks,
       questions,
       token,
     };
 
     try {
-      await createExam(examData);
+      // Panggil fungsi createExam dari service
+      await createExam(examData); // Baris ini sudah diaktifkan
       toast({
         title: "Ujian berhasil dibuat!",
         status: "success",
         duration: 5000,
         isClosable: true,
       });
+      // Reset form setelah submit
       setTitle("");
       setDescription("");
-      setDuration(60);
+      setDeadline(""); // Reset deadline
       setTotalMarks(100);
       setQuestions([]);
       setToken("");
@@ -187,11 +194,11 @@ function CreateExam() {
         <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
           <GridItem>
             <FormControl>
-              <FormLabel>Durasi (menit)</FormLabel>
+              <FormLabel>Batas Waktu (Deadline)</FormLabel>
               <Input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
+                type="datetime-local" // Menggunakan tipe datetime-local
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
               />
             </FormControl>
           </GridItem>
@@ -244,6 +251,7 @@ function CreateExam() {
               }
               boxShadow="md"
               position="relative"
+              ref={index === questions.length - 1 ? lastQuestionRef : null}
             >
               <Flex justify="space-between" align="center" mb={2}>
                 <Heading size="sm">

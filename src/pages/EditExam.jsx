@@ -11,15 +11,19 @@ import {
   Stack,
   useToast,
   FormControl,
+  Grid, // Tambahkan Grid untuk layout yang konsisten
+  GridItem, // Tambahkan GridItem
 } from "@chakra-ui/react";
+// set dari react-hook-form tidak diperlukan di sini, bisa dihapus jika tidak digunakan
 
 function EditExam() {
   const { id } = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState(60);
+  // Mengganti 'duration' dengan 'deadline' dan menginisialisasi dengan string kosong
+  const [deadline, setDeadline] = useState("");
   const [totalMarks, setTotalMarks] = useState(100);
-  const [token, setToken] = useState(""); // Tambahkan state untuk token
+  const [token, setToken] = useState("");
   const toast = useToast();
   const [loading, setLoading] = useState(true);
 
@@ -29,9 +33,15 @@ function EditExam() {
         const data = await getExamById(id);
         setTitle(data.title);
         setDescription(data.description);
-        setDuration(data.duration);
+        // Mengonversi ISO string dari backend ke format yang diterima oleh input datetime-local (YYYY-MM-DDTHH:mm)
+        if (data.deadline) {
+          const date = new Date(data.deadline);
+          // Format menjadi YYYY-MM-DDTHH:mm
+          const formattedDate = date.toISOString().slice(0, 16);
+          setDeadline(formattedDate);
+        }
         setTotalMarks(data.totalMarks);
-        setToken(data.token); // Pastikan token juga di-fetch
+        setToken(data.token);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch exam:", error);
@@ -41,15 +51,17 @@ function EditExam() {
           duration: 5000,
           isClosable: true,
         });
+        setLoading(false); // Pastikan loading dihentikan bahkan saat error
       }
     };
     fetchExam();
   }, [id, toast]);
 
   const handleUpdate = async () => {
-    if (!token) {
+    // Validasi dasar, bisa diperluas sesuai kebutuhan
+    if (!title || !description || !deadline || !totalMarks || !token) {
       toast({
-        title: "Token wajib diisi.",
+        title: "Semua field wajib diisi.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -60,7 +72,8 @@ function EditExam() {
     const updatedExamData = {
       title,
       description,
-      duration,
+      // Mengirim deadline sebagai ISO string
+      deadline: new Date(deadline).toISOString(),
       totalMarks,
       token,
     };
@@ -87,10 +100,16 @@ function EditExam() {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <Box p={6} maxW="1000px" mx="auto" textAlign="center">
+        <p>Loading exam data...</p>
+      </Box>
+    );
+  }
 
   return (
-    <Box p={6} maxW="1000px" mx="auto">
+    <Box p={6} maxW="1000px" mx="auto" minH={"100vh"}>
       <Heading mb={4}>Edit Ujian</Heading>
       <Stack spacing={4}>
         <FormControl>
@@ -111,26 +130,33 @@ function EditExam() {
           />
         </FormControl>
 
-        <FormControl>
-          <FormLabel>Durasi Ujian (menit)</FormLabel>
-          <Input
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-          />
-        </FormControl>
-
-        <FormControl>
-          <FormLabel>Total Marks</FormLabel>
-          <Input
-            type="number"
-            value={totalMarks}
-            onChange={(e) => setTotalMarks(Number(e.target.value))}
-          />
-        </FormControl>
+        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+          <GridItem>
+            <FormControl>
+              <FormLabel>Batas Waktu (Deadline)</FormLabel>
+              <Input
+                type="datetime-local" // Menggunakan tipe datetime-local
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </FormControl>
+          </GridItem>
+          <GridItem>
+            <FormControl>
+              <FormLabel>Total Marks</FormLabel>
+              <Input
+                type="number"
+                value={totalMarks}
+                onChange={(e) => setTotalMarks(Number(e.target.value))}
+              />
+            </FormControl>
+          </GridItem>
+        </Grid>
 
         {/* Token Akses Ujian */}
-        <FormControl>
+        <FormControl mt={4}>
+          {" "}
+          {/* Tambahkan margin atas untuk konsistensi */}
           <FormLabel>Token Akses Ujian</FormLabel>
           <Input
             value={token}
